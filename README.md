@@ -1,2 +1,4 @@
-# ProceduralMaze
-LogicalDox procedural maze assignment
+# Procedural Maze
+## LogicalDox interview assignment
+Nick Perrin
+March 2023
