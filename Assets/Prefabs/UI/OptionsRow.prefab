@@ -608,6 +608,7 @@ GameObject:
   - component: {fileID: 6531202353774167516}
   - component: {fileID: 8200170303157626313}
   - component: {fileID: 65218695614306475}
+  - component: {fileID: 3795932906834986052}
   m_Layer: 5
   m_Name: DownButton
   m_TagString: Untagged
@@ -718,6 +719,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3795932906834986052
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7211041528029680070}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5d148e53ec201c40b9cb8bebf9cb358, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clickSound: {fileID: 8300000, guid: 38f84411f6fab6342ad46fb75bd1522d, type: 3}
 --- !u!1 &7230671270771264692
 GameObject:
   m_ObjectHideFlags: 0
@@ -730,6 +744,7 @@ GameObject:
   - component: {fileID: 5383641360918849669}
   - component: {fileID: 6315711542232306459}
   - component: {fileID: 8941174491604623060}
+  - component: {fileID: 2715719052487766879}
   m_Layer: 5
   m_Name: UpButton
   m_TagString: Untagged
@@ -840,6 +855,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2715719052487766879
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7230671270771264692}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e5d148e53ec201c40b9cb8bebf9cb358, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clickSound: {fileID: 8300000, guid: 38f84411f6fab6342ad46fb75bd1522d, type: 3}
 --- !u!1 &7589052408012634912
 GameObject:
   m_ObjectHideFlags: 0

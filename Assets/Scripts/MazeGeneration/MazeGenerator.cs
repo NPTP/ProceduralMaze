@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using Tools;
 using UnityEngine;
@@ -6,6 +7,11 @@ namespace MazeGeneration
 {
     public static class MazeGenerator
     {
+        /// <summary>
+        /// Called when the maze generation begins. Sends the goal position and scale.
+        /// </summary>
+        public static event Action<Vector3, Vector3> OnMazeGenerationBegun;
+        
         public const string NUM_ROWS_PLAYERPREFS_KEY = "NumRows";
         public const string NUM_COLS_PLAYERPREFS_KEY = "NumCols";
         
@@ -40,6 +46,7 @@ namespace MazeGeneration
                 planeScale.z * (goalZSize / startZSize)
             );
             
+            OnMazeGenerationBegun?.Invoke(planeTransform.position, goalScale);
             CoroutineHost.StartHostedCoroutine(GenerationRoutine(numRows, numCols, planeTransform, goalScale, planeRenderer));
         }
 
