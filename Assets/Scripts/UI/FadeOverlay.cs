@@ -37,7 +37,7 @@ namespace UI
 
         private void Start()
         {
-            Fade(Color.black, 0, 2);
+            Fade(Color.black, 0, 1);
         }
 
         /// <summary>
