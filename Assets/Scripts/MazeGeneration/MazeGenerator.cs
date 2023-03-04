@@ -43,6 +43,10 @@ namespace MazeGeneration
         private const float WALL_SCALE_TIME = 1f;
         private const int PLANE_NUM_ROTATIONS = 2;
 
+        private static readonly Color startBlockLightColor = Color.white;
+        private static readonly Color endBlockLightColor = Color.green;
+        private static readonly Color defaultBlockLightColor = Color.yellow;
+
         public static void Generate()
         {
             int numRows = PlayerPrefs.GetInt(NUM_ROWS_PLAYERPREFS_KEY, 1);
@@ -249,14 +253,17 @@ namespace MazeGeneration
             }
             
             // Set up lights in every other block, alternating start column on each row.
+            // The start and finish blocks gets special lights regardless.
             for (int i = 0; i < numRows; i++)
             {
                 bool placeLight = i % 2 == 0 ? true : false;
-                Color rowColor = new Color(Random.Range(0f, 255f), Random.Range(0f, 255f), Random.Range(0f, 255f));
                 
                 for (int j = 0; j < numCols; j++)
                 {
-                    if (!placeLight)
+                    bool isStartBlock = i == numRows - 1 && j == 0;
+                    bool isEndBlock = i == 0 && j == numCols - 1;
+                    
+                    if (!placeLight && !isStartBlock && !isEndBlock)
                     {
                         placeLight = true;
                         continue;
@@ -270,9 +277,24 @@ namespace MazeGeneration
 
                     Light light = lightGameObject.AddComponent<Light>();
                     light.type = LightType.Point;
-                    light.color = rowColor;
-                    light.intensity = 0.02f;
-                    light.range = WALL_HEIGHT;
+                    if (isStartBlock)
+                    {
+                        light.color = startBlockLightColor;
+                        light.intensity = 0.5f;
+                        light.range = WALL_HEIGHT * 2;
+                    }
+                    else if (isEndBlock)
+                    {
+                        light.color = endBlockLightColor;
+                        light.intensity = 0.5f;
+                        light.range = WALL_HEIGHT * 2;
+                    }
+                    else
+                    {
+                        light.color = defaultBlockLightColor;
+                        light.intensity = 1f;
+                        light.range = WALL_HEIGHT;
+                    }
 
                     placeLight = false;
 
