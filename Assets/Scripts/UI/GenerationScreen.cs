@@ -43,7 +43,7 @@ namespace UI
         private void HandleGenerateButtonClicked()
         {
             FadeOut();
-            MazeGenerator.GenerateMaze();
+            MazeGenerator.Generate();
         }
     }
 }
