@@ -43,7 +43,7 @@ namespace MazeGeneration
         private const float WALL_SCALE_TIME = 1f;
         private const int PLANE_NUM_ROTATIONS = 2;
 
-        private static readonly Color startBlockLightColor = Color.white;
+        private static readonly Color startBlockLightColor = Color.blue;
         private static readonly Color endBlockLightColor = Color.green;
         private static readonly Color defaultBlockLightColor = Color.yellow;
 
@@ -52,8 +52,7 @@ namespace MazeGeneration
             int numRows = PlayerPrefs.GetInt(NUM_ROWS_PLAYERPREFS_KEY, 1);
             int numCols = PlayerPrefs.GetInt(NUM_COLS_PLAYERPREFS_KEY, 1);
 
-            Debug.Log($"Generating maze with {numRows} rows and {numCols} columns.");
-            
+            // TODO: prefab here as well to set material?
             GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
             plane.name = "MazeFloorPlane";
 
@@ -109,7 +108,6 @@ namespace MazeGeneration
         /// <param name="mazeBlocks">The 2D maze blocks array in row-column orientation.</param>
         private static void GenerateMazeRecursive(int row, int col, MazeBlockAbstract[][] mazeBlocks)
         {
-            Debug.Log($"GenerateMazeRecursive: row {row}, col {col}");
             MazeBlockAbstract thisBlockAbstract = mazeBlocks[row][col];
             thisBlockAbstract.Visited = true;
 
@@ -185,17 +183,16 @@ namespace MazeGeneration
                 planeCenter.x - planeRendererBounds.extents.x + BLOCK_SIZE * 0.5f,
                 planeCenter.y,
                 planeCenter.z + planeRendererBounds.extents.z - BLOCK_SIZE * 0.5f);
-
-            Transform[][] cubeTransforms = new Transform[numRows][];
-            Vector3 goalWallScale = new Vector3(BLOCK_SIZE, WALL_HEIGHT, BLOCK_SIZE);
             
-            // LOAD CALL!!!!!
+            // TODO: LOAD CAL FIX-UP!!!!!
             MazeBlock mazeBlockPrefab = Resources.Load<MazeBlock>("MazeBlockPrefab");
+            
             Transform mazeParent = new GameObject("Maze").transform;
-
+            Transform[][] blockTransforms = new Transform[numRows][];
+            
             for (int i = 0; i < numRows; i++)
             {
-                cubeTransforms[i] = new Transform[numCols];
+                blockTransforms[i] = new Transform[numCols];
                 for (int j = 0; j < numCols; j++)
                 {
                     MazeBlock block = GameObject.Instantiate(mazeBlockPrefab);
@@ -208,13 +205,14 @@ namespace MazeGeneration
                         blockStartPos.z - BLOCK_SIZE * i);
 
                     block.MatchAbstractBlock(maze[i][j]);
-                    cubeTransforms[i][j] = blockTransform;
+                    blockTransforms[i][j] = blockTransform;
                 }
             }
             
             // Scale up all the walls simultaneously
             scaleMultiplier = 0;
             scaleMultiplierTween.Start(1, WALL_SCALE_TIME);
+            Vector3 goalWallScale = new Vector3(BLOCK_SIZE, WALL_HEIGHT, BLOCK_SIZE);
             
             // Tween loop
             while (scaleMultiplier < 1)
@@ -223,7 +221,7 @@ namespace MazeGeneration
                 {
                     for (int j = 0; j < numCols; j++)
                     {
-                        Transform blockTransform = cubeTransforms[i][j];
+                        Transform blockTransform = blockTransforms[i][j];
                         blockTransform.localScale = new Vector3(
                             goalWallScale.x, 
                             goalWallScale.y * scaleMultiplier, 
@@ -243,7 +241,7 @@ namespace MazeGeneration
             {
                 for (int j = 0; j < numCols; j++)
                 {
-                    Transform blockTransform = cubeTransforms[i][j];
+                    Transform blockTransform = blockTransforms[i][j];
                     blockTransform.localScale = goalWallScale;
                     blockTransform.position = new Vector3(
                         blockTransform.position.x,
@@ -260,8 +258,8 @@ namespace MazeGeneration
                 
                 for (int j = 0; j < numCols; j++)
                 {
-                    bool isStartBlock = i == numRows - 1 && j == 0;
                     bool isEndBlock = i == 0 && j == numCols - 1;
+                    bool isStartBlock = i == numRows - 1 && j == 0;
                     
                     if (!placeLight && !isStartBlock && !isEndBlock)
                     {
@@ -271,22 +269,22 @@ namespace MazeGeneration
                     
                     GameObject lightGameObject = new GameObject("Light ({i})({j})");
                     Transform lightTransform = lightGameObject.transform;
-                    Transform blockTransform = cubeTransforms[i][j];
+                    Transform blockTransform = blockTransforms[i][j];
                     lightTransform.position = blockTransform.position;
                     lightTransform.parent = blockTransform;
 
                     Light light = lightGameObject.AddComponent<Light>();
                     light.type = LightType.Point;
-                    if (isStartBlock)
-                    {
-                        light.color = startBlockLightColor;
-                        light.intensity = 0.5f;
-                        light.range = WALL_HEIGHT * 2;
-                    }
-                    else if (isEndBlock)
+                    if (isEndBlock)
                     {
                         light.color = endBlockLightColor;
-                        light.intensity = 0.5f;
+                        light.intensity = 2f;
+                        light.range = WALL_HEIGHT * 2;
+                    }
+                    else if (isStartBlock)
+                    {
+                        light.color = startBlockLightColor;
+                        light.intensity = 2f;
                         light.range = WALL_HEIGHT * 2;
                     }
                     else
