@@ -7,6 +7,9 @@ namespace Input
     [RequireComponent(typeof(InputAction), typeof(Rigidbody))]
     public class PlayerControls : MonoBehaviour
     {
+        private const float MAX_TURN_RADIANS_DELTA = 10f;
+        private const float MAX_TURN_MAGNITUDE_DELTA = 10f;
+        
         public static event Action<PlayerControls> OnInputActionPerformed; 
 
         [SerializeField] private float playerMoveSpeed;
@@ -55,7 +58,7 @@ namespace Input
             if (lastNonZeroDirection != Vector3.zero)
             {
                 facingTransform.forward = Vector3.RotateTowards(facingTransform.forward, lastNonZeroDirection,
-                    10f * Time.deltaTime, 10f * Time.deltaTime);
+                    MAX_TURN_RADIANS_DELTA * Time.deltaTime, MAX_TURN_MAGNITUDE_DELTA * Time.deltaTime);
             }
 
             if (direction != Vector3.zero)
