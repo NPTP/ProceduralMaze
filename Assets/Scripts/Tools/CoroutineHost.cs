@@ -12,9 +12,12 @@ namespace Tools
 
         public static void StopHostedCoroutine(ref Coroutine coroutine)
         {
-            Instance.StopCoroutine(coroutine);
+            if (coroutine != null)
+            {
+                Instance.StopCoroutine(coroutine);
+            }
         }
-    
+
         public static void InterruptAndStartCoroutine(IEnumerator routine, ref Coroutine coroutine)
         {
             Instance.InterruptAndStartCoroutineInternal(routine, ref coroutine);

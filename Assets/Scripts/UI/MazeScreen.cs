@@ -9,7 +9,8 @@ namespace UI
         public event Action<MazeScreen> OnRestartMaze; 
 
         [SerializeField] private Button restartButton;
-
+        [SerializeField] private TimerUI timerUI;
+        
         private void OnEnable()
         {
             restartButton.onClick.AddListener(HandleRestartButtonClicked);
@@ -18,11 +19,17 @@ namespace UI
         private void OnDisable()
         {
             restartButton.onClick.RemoveListener(HandleRestartButtonClicked);
+            timerUI.ResetTimer();
         }
 
         private void HandleRestartButtonClicked()
         {
             OnRestartMaze?.Invoke(this);
+        }
+
+        public void BeginMazeTimer()
+        {
+            timerUI.StartTimer();
         }
     }
 }

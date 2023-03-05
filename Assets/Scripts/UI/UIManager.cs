@@ -1,3 +1,4 @@
+using Input;
 using MazeGeneration;
 using UnityEngine;
 
@@ -8,6 +9,9 @@ namespace UI
     /// </summary>
     public class UIManager : MonoBehaviour
     {
+        public static readonly Color InactiveNumberTextColor = new Color(1, 1, 1, 1);
+        public static readonly Color ActiveNumberTextColor = new Color(1, 1, 0.5f, 1);
+
         [SerializeField] private GenerationScreen generationScreen;
         [SerializeField] private MazeScreen mazeScreen;
         [SerializeField] private EndScreen endScreen;
@@ -19,6 +23,7 @@ namespace UI
         private void Awake()
         {
             MazeGenerator.OnMazeGenerationCompleted += HandleMazeGenerationCompleted;
+            PlayerControls.OnInputActionPerformed += HandleInputActionPerformed;
 
             if (mazeScreen != null)
             {
@@ -29,7 +34,8 @@ namespace UI
         private void OnDestroy()
         {
             MazeGenerator.OnMazeGenerationCompleted -= HandleMazeGenerationCompleted;
-            
+            PlayerControls.OnInputActionPerformed -= HandleInputActionPerformed;
+
             if (mazeScreen != null)
             {
                 mazeScreen.OnRestartMaze -= HandleRestartMaze;
@@ -68,6 +74,15 @@ namespace UI
                 MazeGenerator.TearDown();
                 SetUpSceneStartUI();
             }
+        }
+        
+                
+        private void HandleInputActionPerformed(PlayerControls playerControls)
+        {
+            // Unsubscribe immediately, as we only need to catch the first player input
+            // to start the timer.
+            PlayerControls.OnInputActionPerformed -= HandleInputActionPerformed;
+            mazeScreen.BeginMazeTimer();
         }
 
         private void SetScreenActive(Screen screen, bool active, bool instant = false)
