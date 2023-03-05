@@ -73,7 +73,8 @@ namespace Input
 
         private void FixedUpdate()
         {
-            rb.velocity = direction * (playerMoveSpeed * Time.deltaTime);
+            Vector3 newXZVelocity = direction * (playerMoveSpeed * Time.deltaTime);
+            rb.velocity = new Vector3(newXZVelocity.x, rb.velocity.y, newXZVelocity.z);
         }
     }
 }

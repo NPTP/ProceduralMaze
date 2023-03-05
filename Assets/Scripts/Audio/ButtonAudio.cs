@@ -5,8 +5,7 @@ namespace Audio
 {
     public class ButtonAudio : MonoBehaviour, IPointerClickHandler
     {
-        [SerializeField]
-        private AudioClip clickSound;
+        [SerializeField] private AudioClip clickSound;
         
         public void OnPointerClick(PointerEventData eventData)
         {
