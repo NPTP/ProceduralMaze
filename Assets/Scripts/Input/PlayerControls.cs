@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -6,6 +7,8 @@ namespace Input
     [RequireComponent(typeof(InputAction), typeof(Rigidbody))]
     public class PlayerControls : MonoBehaviour
     {
+        public static event Action<PlayerControls> OnInputActionPerformed; 
+
         [SerializeField] private float playerMoveSpeed;
         [SerializeField] private InputAction playerControlsInputAction;
         [SerializeField] private Rigidbody rb;
@@ -30,11 +33,18 @@ namespace Input
         private void OnEnable()
         {
             playerControlsInputAction.Enable();
+            playerControlsInputAction.performed += HandlePlayercontrolsInputActionPerformed;
         }
 
         private void OnDisable()
         {
             playerControlsInputAction.Disable();
+            playerControlsInputAction.performed -= HandlePlayercontrolsInputActionPerformed;
+        }
+
+        private void HandlePlayercontrolsInputActionPerformed(InputAction.CallbackContext context)
+        {
+            OnInputActionPerformed?.Invoke(this);
         }
 
         private void Update()
