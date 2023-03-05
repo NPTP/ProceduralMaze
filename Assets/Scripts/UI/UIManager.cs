@@ -1,5 +1,5 @@
 using Input;
-using MazeGeneration;
+using Maze;
 using UnityEngine;
 
 namespace UI

@@ -1,4 +1,4 @@
-using MazeGeneration;
+using Maze;
 using UnityEngine;
 using UnityEngine.UI;
 
