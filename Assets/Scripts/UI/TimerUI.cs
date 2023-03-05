@@ -5,27 +5,45 @@ using UnityEngine;
 
 namespace UI
 {
-    [RequireComponent(typeof(RectTransform))]
+    [RequireComponent(typeof(Animator))]
     public class TimerUI : MonoBehaviour
     {
+        private static readonly int Idle = Animator.StringToHash("Idle");
+        private static readonly int ScalePunch = Animator.StringToHash("ScalePunch");
+
         [SerializeField] private RectTransform rectTransform;
         [SerializeField] private TextMeshProUGUI timeText;
+        [SerializeField] private Animator animator;
 
+        private float timeElapsed;
         private int minutes;
         private int seconds;
         private Coroutine timerCoroutine;
 
         private void OnValidate()
         {
-            if (rectTransform == null || rectTransform.gameObject != this.gameObject)
+            if (animator == null || animator.gameObject != this.gameObject)
             {
-                rectTransform = GetComponent<RectTransform>();
+                animator = GetComponent<Animator>();
+            }
+        }
+
+        private void Update()
+        {
+            if (UnityEngine.Input.GetKeyDown(KeyCode.X))
+            {
+                StartTimer();
+            }
+            else if (UnityEngine.Input.GetKeyDown(KeyCode.C))
+            {
+                StopTimer();
             }
         }
 
         public void StartTimer()
         {
             timeText.color = UIManager.ActiveNumberTextColor;
+            animator.CrossFade(ScalePunch, 0);
             CoroutineHost.InterruptAndStartCoroutine(TimerRoutine(), ref timerCoroutine);
         }
 
@@ -39,6 +57,7 @@ namespace UI
         public void ResetTimer()
         {
             StopTimer();
+            timeElapsed = 0;
             minutes = 0;
             seconds = 0;
             UpdateTimeText();
@@ -46,7 +65,6 @@ namespace UI
 
         private IEnumerator TimerRoutine()
         {
-            float timeElapsed = 0;
             while (true)
             {
                 int secondsPassed = (int)timeElapsed;
