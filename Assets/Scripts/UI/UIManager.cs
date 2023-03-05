@@ -1,3 +1,4 @@
+using System;
 using Input;
 using Maze;
 using UnityEngine;
@@ -6,9 +7,12 @@ namespace UI
 {
     /// <summary>
     /// Controller for UI screens and top-level UI behaviours.
+    /// System for showing screens keeps only one screen visible at a time.
     /// </summary>
     public class UIManager : MonoBehaviour
     {
+        public static event Action OnMazeRestart;
+        
         public static readonly Color InactiveNumberTextColor = new Color(1, 1, 1, 1);
         public static readonly Color ActiveNumberTextColor = new Color(1, 1, 0.5f, 1);
 
@@ -23,6 +27,7 @@ namespace UI
         private void Awake()
         {
             MazeGenerator.OnMazeGenerationCompleted += HandleMazeGenerationCompleted;
+            MazeGenerator.OnPlayerEnteredEndBlock += HandlePlayerEnteredEndBlock;
             PlayerControls.OnPlayerControlsEnabled += HandlePlayerControlsEnabled;
 
             if (mazeScreen != null)
@@ -34,6 +39,7 @@ namespace UI
         private void OnDestroy()
         {
             MazeGenerator.OnMazeGenerationCompleted -= HandleMazeGenerationCompleted;
+            MazeGenerator.OnPlayerEnteredEndBlock -= HandlePlayerEnteredEndBlock;
             PlayerControls.OnPlayerControlsEnabled -= HandlePlayerControlsEnabled;
 
             if (mazeScreen != null)
@@ -69,9 +75,8 @@ namespace UI
 
         private void SetUpSceneStartUI()
         {
+            HideAllScreens();
             SetScreenActive(generationScreen, true, instant: true);
-            SetScreenActive(mazeScreen, false, instant: true);
-            SetScreenActive(endScreen, false, instant: true);
 
             // Start the scene by fading in gracefully from black
             fadeOverlay.Fade(Color.black, alpha: 0, duration: 1, fromAlpha: 1);
@@ -79,6 +84,12 @@ namespace UI
 
         private void HandleMazeGenerationCompleted()
         {
+            // Don't show maze screen if player wins maze immediately.
+            if (MazeGenerator.NumRows < 2 && MazeGenerator.NumCols < 2)
+            {
+                return;
+            }
+            
             mazeScreen.OnScreenFadeInCompleted += handleScreenFadeInCompleted;
             SetScreenActive(mazeScreen, true);
 
@@ -89,20 +100,40 @@ namespace UI
             }
         }
         
+        private void HandlePlayerEnteredEndBlock()
+        {
+            RestartMaze();
+            return;
+            
+            // TODO
+            SetScreenActive(endScreen, true);
+        }
+
         private void HandleRestartMaze(MazeScreen ms)
         {
-            SetScreenActive(mazeScreen, false);
+            RestartMaze();
+        }
+
+        private void RestartMaze()
+        {
             fadeOverlay.OnFadeCompleted += handleFadeCompleted;
             fadeOverlay.Fade(Color.black, alpha: 1, duration: 0.5f);
 
             void handleFadeCompleted(FadeOverlay fo)
             {
                 fadeOverlay.OnFadeCompleted -= handleFadeCompleted;
-                MazeGenerator.TearDown();
+                OnMazeRestart?.Invoke();
                 SetUpSceneStartUI();
             }
         }
 
+        private void HideAllScreens()
+        {
+            SetScreenActive(generationScreen, false, instant: true);
+            SetScreenActive(mazeScreen, false, instant: true);
+            SetScreenActive(endScreen, false, instant: true);
+        }
+        
         private void SetScreenActive(Screen screen, bool active, bool instant = false)
         {
             if (screen == null)
@@ -123,10 +154,16 @@ namespace UI
                 }
 
                 screen.FadeIn(instant);
+                activeScreen = screen;
             }
             else
             {
                 screen.FadeOut(instant);
+
+                if (screen == activeScreen)
+                {
+                    activeScreen = null;
+                }
             }
         }
     }

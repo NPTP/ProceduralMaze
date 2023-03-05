@@ -842,6 +842,53 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 545164211}
   m_CullTransparentMesh: 1
+--- !u!1 &689854304
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 689854306}
+  - component: {fileID: 689854305}
+  m_Layer: 0
+  m_Name: MazeGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &689854305
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 689854304}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 92e6614f564a723458efcf6c0e033477, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mazeBlockPrefab: {fileID: 390213154496570151, guid: 268655e82619bb94e8b1ad5dc5e6388b, type: 3}
+  mazeFloorPrefab: {fileID: 8011118034751205662, guid: 116fc7e2067b7974fa1a1118521a2fab, type: 3}
+  playerPrefab: {fileID: 9069625774073324361, guid: aca6848cfb87ae24cbba1da4be73d955, type: 3}
+--- !u!4 &689854306
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 689854304}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.6855128, y: 17.432896, z: 0.579122}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &696839043
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2098,7 +2145,7 @@ RectTransform:
   - {fileID: 1308938755}
   - {fileID: 1358808582}
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -2452,6 +2499,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rectTransform: {fileID: 1895957494}
   timeText: {fileID: 192405654}
+  animator: {fileID: 1895957498}
 --- !u!95 &1895957498
 Animator:
   serializedVersion: 4
@@ -2660,7 +2708,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 9069625774073324355, guid: aca6848cfb87ae24cbba1da4be73d955, type: 3}
       propertyPath: m_RootOrder
-      value: 3
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 9069625774073324355, guid: aca6848cfb87ae24cbba1da4be73d955, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2705,6 +2753,10 @@ PrefabInstance:
     - target: {fileID: 9069625774073324361, guid: aca6848cfb87ae24cbba1da4be73d955, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 9069625774073324367, guid: aca6848cfb87ae24cbba1da4be73d955, type: 3}
+      propertyPath: m_UseGravity
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: aca6848cfb87ae24cbba1da4be73d955, type: 3}

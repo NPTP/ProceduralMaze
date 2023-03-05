@@ -1,69 +1,96 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Tools;
+using UI;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace Maze
 {
-    // TODO: separate static abstract maze generation from a class that actually hosts resources, keeps track of instances etc
-    public static class MazeGenerator
+    /// <summary>
+    /// In-scene maze generator that handles actually placing and animating
+    /// objects in the scene to make the maze the player will navigate.
+    /// </summary>
+    public class MazeGenerator : MonoBehaviour
     {
-        /// <summary>
-        /// Called when the maze generation begins. Sends the goal position and scale.
-        /// </summary>
-        public static event Action<Vector3, Vector3> OnMazeGenerationBegun;
-        public static event Action OnMazeGenerationCompleted;
-        
-        /// <summary>
-        /// Clockwise cardinal directions
-        /// </summary>
-        public enum Direction
-        {
-            North = 0,
-            East,
-            South,
-            West,
-        }
-        
-        public const string NUM_ROWS_PLAYERPREFS_KEY = "NumRows";
-        public const string NUM_COLS_PLAYERPREFS_KEY = "NumCols";
-        
-        public class MazeBlockAbstract
-        {
-            public bool Visited;
-            public bool NorthWall = true;
-            public bool SouthWall = true;
-            public bool EastWall = true;
-            public bool WestWall = true;
-        }
-        
         private const float BLOCK_SIZE = 10f;
         private const float WALL_HEIGHT = 10f;
         private const float PLANE_SCALE_TIME = 1.5f;
         private const float WALL_SCALE_TIME = 1f;
         private const int PLANE_NUM_ROTATIONS = 2;
+        private const string NUM_ROWS_PLAYERPREFS_KEY = "NumRows";
+        private const string NUM_COLS_PLAYERPREFS_KEY = "NumCols";
+        public static event Action OnMazeGenerationCompleted;
+        public static event Action OnPlayerEnteredEndBlock;
+
+        public static int NumRows => PlayerPrefs.GetInt(NUM_ROWS_PLAYERPREFS_KEY, 1);
+        public static int NumCols => PlayerPrefs.GetInt(NUM_COLS_PLAYERPREFS_KEY, 1);
 
         private static readonly Color startBlockLightColor = Color.blue;
         private static readonly Color endBlockLightColor = Color.green;
         private static readonly Color defaultBlockLightColor = Color.yellow;
 
-        public static void Generate()
-        {
-            int numRows = PlayerPrefs.GetInt(NUM_ROWS_PLAYERPREFS_KEY, 1);
-            int numCols = PlayerPrefs.GetInt(NUM_COLS_PLAYERPREFS_KEY, 1);
+        [SerializeField] private MazeBlock mazeBlockPrefab;
+        [SerializeField] private Material mazePlaneMaterial;
+        [SerializeField] private GameObject playerPrefab;
 
-            // TODO: prefab here as well to set material?
+        private Transform mazeParent;
+        private readonly List<Light> lights = new List<Light>();
+        private MazeBlock[][] blocks;
+        private Renderer planeRenderer;
+        private GameObject player;
+
+        private void Awake()
+        {
+            GenerationScreen.OnGenerateButtonClicked += HandleGenerationButtonClicked;
+        }
+
+        private void OnDestroy()
+        {
+            UIManager.OnMazeRestart -= HandleMazeRestart;
+            GenerationScreen.OnGenerateButtonClicked -= HandleGenerationButtonClicked;
+        }
+
+        private void HandleGenerationButtonClicked()
+        {
+            GenerationScreen.OnGenerateButtonClicked -= HandleGenerationButtonClicked;
+            UIManager.OnMazeRestart += HandleMazeRestart;
+            Generate();
+        }
+        
+        private void HandleMazeRestart()
+        {
+            UIManager.OnMazeRestart -= HandleMazeRestart;
+            TearDown();
+            GenerationScreen.OnGenerateButtonClicked += HandleGenerationButtonClicked;
+        }
+
+        public static void SetNumRows(int numRows)
+        {
+            PlayerPrefs.SetInt(NUM_ROWS_PLAYERPREFS_KEY, numRows);
+        }
+
+        public static void SetNumCols(int numCols)
+        {
+            PlayerPrefs.SetInt(NUM_COLS_PLAYERPREFS_KEY, numCols);
+        }
+
+        private void Generate()
+        {
+            mazeParent = new GameObject("Maze").transform;
+
             GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
             plane.name = "MazeFloorPlane";
-
-            Renderer planeRenderer = plane.GetComponent<Renderer>();
+            plane.transform.parent = mazeParent;
+            planeRenderer = plane.GetComponent<Renderer>();
+            planeRenderer.sharedMaterial = mazePlaneMaterial;
+            
             Vector3 planeSize = planeRenderer.bounds.size;
             float startXSize = planeSize.x;
             float startZSize = planeSize.z;
             
-            float goalXSize = numCols * BLOCK_SIZE;
-            float goalZSize = numRows * BLOCK_SIZE;
+            float goalXSize = NumCols * BLOCK_SIZE;
+            float goalZSize = NumRows * BLOCK_SIZE;
             
             Transform planeTransform = plane.transform;
             Vector3 planeScale = planeTransform.localScale;
@@ -73,91 +100,15 @@ namespace Maze
                 planeScale.z * (goalZSize / startZSize)
             );
             
-            OnMazeGenerationBegun?.Invoke(planeTransform.position, goalScale);
-            CoroutineHost.StartHostedCoroutine(GenerationRoutine(numRows, numCols, planeTransform, goalScale, planeRenderer));
+            CoroutineHost.StartHostedCoroutine(GenerationRoutine(goalScale));
         }
 
-        /// <summary>
-        /// Generate the maze in a 2D array top-down in row-column orientation such
-        /// that maze[0][0] is the top left corner and maze[numRows - 1][numCols - 1]
-        /// is the bottom right corner.
-        /// </summary>
-        /// <param name="numRows">Number of rows the maze will have</param>
-        /// <param name="numCols">Number of columns the maze will have</param>
-        /// <param name="maze">The output 2D array representing the generated maze</param>
-        private static void GenerateMaze(int numRows, int numCols, out MazeBlockAbstract[][] maze)
+        private IEnumerator GenerationRoutine(Vector3 goalScale)
         {
-            // Populate the maze block array with new blocks
-            maze = new MazeBlockAbstract[numRows][];
-            for (int i = 0; i < numRows; i++)
-            {
-                maze[i] = new MazeBlockAbstract[numCols];
-                for (int j = 0; j < numCols; j++)
-                {
-                    maze[i][j] = new MazeBlockAbstract();
-                }
-            }
-
-            GenerateMazeRecursive(0, 0, maze);
-        }
-
-        /// <summary>
-        /// Generate the maze recursively from a given maze block position.
-        /// </summary>
-        /// <param name="row">The row of the maze block currently being set up.</param>
-        /// <param name="col">The column of the maze block currently being set up.</param>
-        /// <param name="mazeBlocks">The 2D maze blocks array in row-column orientation.</param>
-        private static void GenerateMazeRecursive(int row, int col, MazeBlockAbstract[][] mazeBlocks)
-        {
-            MazeBlockAbstract thisBlockAbstract = mazeBlocks[row][col];
-            thisBlockAbstract.Visited = true;
-
-            Direction[] directions = new[]
-            {
-                MazeGenerator.Direction.North,
-                MazeGenerator.Direction.East,
-                MazeGenerator.Direction.South,
-                MazeGenerator.Direction.West
-            };
-
-            // Shuffle the order of directions to choose a random maze block.
-            for (int i = directions.Length - 1; i > 0; i--)
-            {
-                int randomIndex = Random.Range(0, i + 1);
-                (directions[i], directions[randomIndex]) = (directions[randomIndex], directions[i]);
-            }
-
-            for (int i = 0; i < directions.Length; i++)
-            {
-                Direction direction = directions[i];
-                switch (direction)
-                {
-                    case Direction.North when row - 1 >= 0 && !mazeBlocks[row - 1][col].Visited:
-                        thisBlockAbstract.NorthWall = false;
-                        mazeBlocks[row - 1][col].SouthWall = false;
-                        GenerateMazeRecursive(row - 1, col, mazeBlocks);
-                        break;
-                    case Direction.East when col + 1 < mazeBlocks[row].Length && !mazeBlocks[row][col + 1].Visited:
-                        thisBlockAbstract.EastWall = false;
-                        mazeBlocks[row][col + 1].WestWall = false;
-                        GenerateMazeRecursive(row, col + 1, mazeBlocks);
-                        break;
-                    case Direction.South when row + 1 < mazeBlocks.Length && !mazeBlocks[row + 1][col].Visited:
-                        thisBlockAbstract.SouthWall = false;
-                        mazeBlocks[row + 1][col].NorthWall = false;
-                        GenerateMazeRecursive(row + 1, col, mazeBlocks);
-                        break;
-                    case Direction.West when col - 1 >= 0 && !mazeBlocks[row][col - 1].Visited:
-                        thisBlockAbstract.WestWall = false;
-                        mazeBlocks[row][col - 1].EastWall = false;
-                        GenerateMazeRecursive(row, col - 1, mazeBlocks);
-                        break;
-                }
-            }
-        }
-
-        private static IEnumerator GenerationRoutine(int numRows, int numCols, Transform planeTransform, Vector3 goalScale, Renderer planeRenderer)
-        {
+            int numRows = NumRows;
+            int numCols = NumCols;
+            
+            Transform planeTransform = planeRenderer.transform;
             planeTransform.localScale = Vector3.zero;
             float scaleMultiplier = 0;
             Vector3 eulerRotation = planeTransform.rotation.eulerAngles;
@@ -174,7 +125,7 @@ namespace Maze
             planeTransform.localScale = goalScale;
             planeTransform.rotation = Quaternion.identity;
             
-            GenerateMaze(numRows, numCols, out MazeBlockAbstract[][] maze);
+            MazeGeneration.GenerateMaze(numRows, numCols, out MazeBlockAbstract[][] maze);
 
             Bounds planeRendererBounds = planeRenderer.bounds;
             Vector3 planeCenter = planeRendererBounds.center;
@@ -184,12 +135,8 @@ namespace Maze
                 planeCenter.x - planeRendererBounds.extents.x + BLOCK_SIZE * 0.5f,
                 planeCenter.y,
                 planeCenter.z + planeRendererBounds.extents.z - BLOCK_SIZE * 0.5f);
-            
-            // TODO: LOAD CAL FIX-UP!!!!!
-            MazeBlock mazeBlockPrefab = Resources.Load<MazeBlock>("MazeBlockPrefab");
-            
-            Transform mazeParent = new GameObject("Maze").transform;
-            MazeBlock[][] blocks = new MazeBlock[numRows][];
+
+            blocks = new MazeBlock[numRows][];
             
             for (int i = 0; i < numRows; i++)
             {
@@ -253,6 +200,7 @@ namespace Maze
             
             // Set up lights in every other block, alternating start column on each row.
             // The start and finish blocks gets special lights regardless.
+            lights.Clear();
             for (int i = 0; i < numRows; i++)
             {
                 bool placeLight = i % 2 == 0 ? true : false;
@@ -275,30 +223,30 @@ namespace Maze
                     lightTransform.position = blockTransform.position;
                     lightTransform.parent = blockTransform;
 
-                    Light light = lightGameObject.AddComponent<Light>();
-                    light.type = LightType.Point;
+                    Light addedLight = lightGameObject.AddComponent<Light>();
+                    lights.Add(addedLight);
+                    addedLight.type = LightType.Point;
                     if (isEndBlock)
                     {
                         // TODO: add trigger box on ending block
                         block.CreateTriggerBox();
                         block.OnPlayerEnterBlock += HandlePlayerEnterEndBlock;
-                        light.color = endBlockLightColor;
-                        light.intensity = 2f;
-                        light.range = WALL_HEIGHT * 2;
+                        addedLight.color = endBlockLightColor;
+                        addedLight.intensity = 2f;
+                        addedLight.range = WALL_HEIGHT * 2;
                         
                     }
                     else if (isStartBlock)
                     {
-                        // TODO: spawn player here
-                        light.color = startBlockLightColor;
-                        light.intensity = 2f;
-                        light.range = WALL_HEIGHT * 2;
+                        addedLight.color = startBlockLightColor;
+                        addedLight.intensity = 2f;
+                        addedLight.range = WALL_HEIGHT * 2;
                     }
                     else
                     {
-                        light.color = defaultBlockLightColor;
-                        light.intensity = 1f;
-                        light.range = WALL_HEIGHT;
+                        addedLight.color = defaultBlockLightColor;
+                        addedLight.intensity = 1f;
+                        addedLight.range = WALL_HEIGHT;
                     }
 
                     placeLight = false;
@@ -307,17 +255,57 @@ namespace Maze
                 }
             }
             
+            // Instantiate the player at the starting block
+            // (if there is only one block, this is also the ending block)
+            if (player == null)
+            {
+                Vector3 startBlockPosition = blocks[numRows - 1][0].transform.position;
+                player = GameObject.Instantiate(playerPrefab,
+                    startBlockPosition + Vector3.up * 5,
+                    Quaternion.identity);
+            }
+            
             OnMazeGenerationCompleted?.Invoke();
         }
 
         private static void HandlePlayerEnterEndBlock(MazeBlock endBlock)
         {
-            Debug.Log("Player entered end block!!!");
+            endBlock.OnPlayerEnterBlock -= HandlePlayerEnterEndBlock;
+            OnPlayerEnteredEndBlock?.Invoke();
         }
 
-        public static void TearDown()
+        private void TearDown()
         {
-            // TODO:
+            // Remove the player
+            Destroy(player);
+            player = null;
+            
+            // Tear down the maze
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                for (int j = 0; j < blocks[i].Length; j++)
+                {
+                    Destroy(blocks[i][j].gameObject);
+                }
+
+                blocks[i] = null;
+            }
+
+            blocks = null;
+
+            // Tear down the lights
+            for (int i = 0; i < lights.Count; i++)
+            {
+                Destroy(lights[i].gameObject);
+            }
+            lights.Clear();
+
+            // Tear down the plane
+            Destroy(planeRenderer.gameObject);
+            
+            Destroy(mazeParent.gameObject);
+            
+            Resources.UnloadUnusedAssets();
         }
     }
 }

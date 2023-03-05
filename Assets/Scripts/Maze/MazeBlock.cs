@@ -14,7 +14,7 @@ namespace Maze
         [SerializeField] private GameObject southWall;
         [SerializeField] private GameObject westWall;
 
-        public void MatchAbstractBlock(MazeGenerator.MazeBlockAbstract mazeBlockAbstract)
+        public void MatchAbstractBlock(MazeBlockAbstract mazeBlockAbstract)
         {
             if (!mazeBlockAbstract.NorthWall)
             {

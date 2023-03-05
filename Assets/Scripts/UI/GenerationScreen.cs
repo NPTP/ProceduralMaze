@@ -1,3 +1,4 @@
+using System;
 using Maze;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,6 +7,8 @@ namespace UI
 {
     public class GenerationScreen : Screen
     {
+        public static event Action OnGenerateButtonClicked;
+        
         [SerializeField] private OptionsRow rowsOptionsRow;
         [SerializeField] private OptionsRow columnsOptionsRow;
         [SerializeField] private Button generateButton;
@@ -26,24 +29,24 @@ namespace UI
 
         private void Start()
         {
-            rowsOptionsRow.SetNumber(PlayerPrefs.GetInt(MazeGenerator.NUM_ROWS_PLAYERPREFS_KEY, 1));
-            columnsOptionsRow.SetNumber(PlayerPrefs.GetInt(MazeGenerator.NUM_COLS_PLAYERPREFS_KEY, 1));
+            rowsOptionsRow.SetNumber(MazeGenerator.NumRows);
+            columnsOptionsRow.SetNumber(MazeGenerator.NumCols);
         }
 
         private void HandleNumberRowsChanged(int newValue)
         {
-            PlayerPrefs.SetInt(MazeGenerator.NUM_ROWS_PLAYERPREFS_KEY, newValue);
+            MazeGenerator.SetNumRows(newValue);
         }
 
         private void HandleNumberColumnsChanged(int newValue)
         {
-            PlayerPrefs.SetInt(MazeGenerator.NUM_COLS_PLAYERPREFS_KEY, newValue);
+            MazeGenerator.SetNumCols(newValue);
         }
 
         private void HandleGenerateButtonClicked()
         {
             FadeOut();
-            MazeGenerator.Generate();
+            OnGenerateButtonClicked?.Invoke();
         }
     }
 }

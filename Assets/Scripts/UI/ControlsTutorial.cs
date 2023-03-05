@@ -13,11 +13,21 @@ namespace UI
 
         public void Play()
         {
+            if (!gameObject.activeInHierarchy)
+            {
+                return;
+            }
+            
             animator.CrossFade(PlayTutorial, 0);
         }
 
         public void Hide()
         {
+            if (!gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
             animator.CrossFade(Invisible, 0.25f);
         }
     }

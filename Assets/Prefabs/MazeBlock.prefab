@@ -108,7 +108,7 @@ GameObject:
   - component: {fileID: 8707111803314369969}
   - component: {fileID: 390213154496570151}
   m_Layer: 0
-  m_Name: MazeBlockPrefab
+  m_Name: MazeBlock
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
