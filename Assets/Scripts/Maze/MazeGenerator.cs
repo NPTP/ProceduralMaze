@@ -4,7 +4,7 @@ using Tools;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace MazeGeneration
+namespace Maze
 {
     // TODO: separate static abstract maze generation from a class that actually hosts resources, keeps track of instances etc
     public static class MazeGenerator
@@ -189,11 +189,11 @@ namespace MazeGeneration
             MazeBlock mazeBlockPrefab = Resources.Load<MazeBlock>("MazeBlockPrefab");
             
             Transform mazeParent = new GameObject("Maze").transform;
-            Transform[][] blockTransforms = new Transform[numRows][];
+            MazeBlock[][] blocks = new MazeBlock[numRows][];
             
             for (int i = 0; i < numRows; i++)
             {
-                blockTransforms[i] = new Transform[numCols];
+                blocks[i] = new MazeBlock[numCols];
                 for (int j = 0; j < numCols; j++)
                 {
                     MazeBlock block = GameObject.Instantiate(mazeBlockPrefab);
@@ -206,7 +206,7 @@ namespace MazeGeneration
                         blockStartPos.z - BLOCK_SIZE * i);
 
                     block.MatchAbstractBlock(maze[i][j]);
-                    blockTransforms[i][j] = blockTransform;
+                    blocks[i][j] = block;
                 }
             }
             
@@ -222,7 +222,7 @@ namespace MazeGeneration
                 {
                     for (int j = 0; j < numCols; j++)
                     {
-                        Transform blockTransform = blockTransforms[i][j];
+                        Transform blockTransform = blocks[i][j].transform;
                         blockTransform.localScale = new Vector3(
                             goalWallScale.x, 
                             goalWallScale.y * scaleMultiplier, 
@@ -242,7 +242,7 @@ namespace MazeGeneration
             {
                 for (int j = 0; j < numCols; j++)
                 {
-                    Transform blockTransform = blockTransforms[i][j];
+                    Transform blockTransform = blocks[i][j].transform;
                     blockTransform.localScale = goalWallScale;
                     blockTransform.position = new Vector3(
                         blockTransform.position.x,
@@ -267,10 +267,11 @@ namespace MazeGeneration
                         placeLight = true;
                         continue;
                     }
-                    
+
+                    MazeBlock block = blocks[i][j];
                     GameObject lightGameObject = new GameObject("Light ({i})({j})");
                     Transform lightTransform = lightGameObject.transform;
-                    Transform blockTransform = blockTransforms[i][j];
+                    Transform blockTransform = block.transform;
                     lightTransform.position = blockTransform.position;
                     lightTransform.parent = blockTransform;
 
@@ -279,12 +280,16 @@ namespace MazeGeneration
                     if (isEndBlock)
                     {
                         // TODO: add trigger box on ending block
+                        block.CreateTriggerBox();
+                        block.OnPlayerEnterBlock += HandlePlayerEnterEndBlock;
                         light.color = endBlockLightColor;
                         light.intensity = 2f;
                         light.range = WALL_HEIGHT * 2;
+                        
                     }
                     else if (isStartBlock)
                     {
+                        // TODO: spawn player here
                         light.color = startBlockLightColor;
                         light.intensity = 2f;
                         light.range = WALL_HEIGHT * 2;
@@ -303,6 +308,11 @@ namespace MazeGeneration
             }
             
             OnMazeGenerationCompleted?.Invoke();
+        }
+
+        private static void HandlePlayerEnterEndBlock(MazeBlock endBlock)
+        {
+            Debug.Log("Player entered end block!!!");
         }
 
         public static void TearDown()
