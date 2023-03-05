@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Cameras;
 using Tools;
 using UI;
 using UnityEngine;
@@ -26,9 +27,9 @@ namespace Maze
         public static int NumRows => PlayerPrefs.GetInt(NUM_ROWS_PLAYERPREFS_KEY, 1);
         public static int NumCols => PlayerPrefs.GetInt(NUM_COLS_PLAYERPREFS_KEY, 1);
 
-        private static readonly Color startBlockLightColor = Color.blue;
-        private static readonly Color endBlockLightColor = Color.green;
-        private static readonly Color defaultBlockLightColor = Color.yellow;
+        private static readonly Color StartBlockLightColor = Color.blue;
+        private static readonly Color EndBlockLightColor = Color.green;
+        private static readonly Color DefaultBlockLightColor = Color.yellow;
 
         [SerializeField] private MazeBlock mazeBlockPrefab;
         [SerializeField] private Material mazePlaneMaterial;
@@ -109,6 +110,11 @@ namespace Maze
             int numCols = NumCols;
             
             Transform planeTransform = planeRenderer.transform;
+            
+            planeTransform.localScale = goalScale;
+            planeTransform.rotation = Quaternion.identity;
+            MazeCamera.Instance.FitBoundsInView(planeRenderer.bounds, 0.5f);
+            
             planeTransform.localScale = Vector3.zero;
             float scaleMultiplier = 0;
             Vector3 eulerRotation = planeTransform.rotation.eulerAngles;
@@ -124,7 +130,7 @@ namespace Maze
 
             planeTransform.localScale = goalScale;
             planeTransform.rotation = Quaternion.identity;
-            
+
             MazeGeneration.GenerateMaze(numRows, numCols, out MazeBlockAbstract[][] maze);
 
             Bounds planeRendererBounds = planeRenderer.bounds;
@@ -231,20 +237,20 @@ namespace Maze
                         // TODO: add trigger box on ending block
                         block.CreateTriggerBox();
                         block.OnPlayerEnterBlock += HandlePlayerEnterEndBlock;
-                        addedLight.color = endBlockLightColor;
+                        addedLight.color = EndBlockLightColor;
                         addedLight.intensity = 2f;
                         addedLight.range = WALL_HEIGHT * 2;
                         
                     }
                     else if (isStartBlock)
                     {
-                        addedLight.color = startBlockLightColor;
+                        addedLight.color = StartBlockLightColor;
                         addedLight.intensity = 2f;
                         addedLight.range = WALL_HEIGHT * 2;
                     }
                     else
                     {
-                        addedLight.color = defaultBlockLightColor;
+                        addedLight.color = DefaultBlockLightColor;
                         addedLight.intensity = 1f;
                         addedLight.range = WALL_HEIGHT;
                     }
@@ -302,10 +308,13 @@ namespace Maze
 
             // Tear down the plane
             Destroy(planeRenderer.gameObject);
+            planeRenderer = null;
             
             Destroy(mazeParent.gameObject);
+            mazeParent = null;
             
             Resources.UnloadUnusedAssets();
+            GC.Collect();
         }
     }
 }
