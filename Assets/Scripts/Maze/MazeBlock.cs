@@ -14,6 +14,9 @@ namespace Maze
         [SerializeField] private GameObject southWall;
         [SerializeField] private GameObject westWall;
 
+        private BoxCollider boxCollider;
+        public BoxCollider BoxCollider => boxCollider;
+
         public void MatchAbstractBlock(MazeBlockAbstract mazeBlockAbstract)
         {
             if (!mazeBlockAbstract.NorthWall)
@@ -39,10 +42,19 @@ namespace Maze
 
         public void CreateTriggerBox()
         {
-            BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
+            boxCollider = gameObject.AddComponent<BoxCollider>();
             boxCollider.isTrigger = true;
         }
 
+        public void SetMaterial(Material material)
+        {
+            Renderer[] renderers = GetComponentsInChildren<Renderer>();
+            foreach (Renderer rdr in renderers)
+            {
+                rdr.sharedMaterial = material;
+            }
+        }
+        
         private void OnTriggerEnter(Collider other)
         {
             if (other.CompareTag(PLAYER_TAG))

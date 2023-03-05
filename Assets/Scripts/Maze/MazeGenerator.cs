@@ -21,6 +21,8 @@ namespace Maze
         private const int PLANE_NUM_ROTATIONS = 2;
         private const string NUM_ROWS_PLAYERPREFS_KEY = "NumRows";
         private const string NUM_COLS_PLAYERPREFS_KEY = "NumCols";
+        private const float CAMERA_MOVE_DURATION = 0.5f;
+        public static event Action OnMazeGenerationStarted;
         public static event Action OnMazeGenerationCompleted;
         public static event Action OnPlayerEnteredEndBlock;
 
@@ -32,8 +34,10 @@ namespace Maze
         private static readonly Color DefaultBlockLightColor = Color.yellow;
 
         [SerializeField] private MazeBlock mazeBlockPrefab;
-        [SerializeField] private Material mazePlaneMaterial;
         [SerializeField] private GameObject playerPrefab;
+        [SerializeField] private Material mazePlaneMaterial;
+        [SerializeField] private Material startBlockMaterial;
+        [SerializeField] private Material endBlockMaterial;
 
         private Transform mazeParent;
         private readonly List<Light> lights = new List<Light>();
@@ -78,6 +82,8 @@ namespace Maze
 
         private void Generate()
         {
+            OnMazeGenerationStarted?.Invoke();
+            
             mazeParent = new GameObject("Maze").transform;
 
             GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
@@ -108,13 +114,14 @@ namespace Maze
         {
             int numRows = NumRows;
             int numCols = NumCols;
-            
             Transform planeTransform = planeRenderer.transform;
             
+            // Move the camera so it can see the full maze generation animations
             planeTransform.localScale = goalScale;
             planeTransform.rotation = Quaternion.identity;
-            MazeCamera.Instance.FitBoundsInView(planeRenderer.bounds, 0.5f);
+            MazeCamera.Instance.FitBoundsInView(planeRenderer.bounds, CAMERA_MOVE_DURATION, true);
             
+            // Perform scaling and rotating of the maze floor plane
             planeTransform.localScale = Vector3.zero;
             float scaleMultiplier = 0;
             Vector3 eulerRotation = planeTransform.rotation.eulerAngles;
@@ -131,8 +138,10 @@ namespace Maze
             planeTransform.localScale = goalScale;
             planeTransform.rotation = Quaternion.identity;
 
+            // Generate the maze into an abstract data structure grid
             MazeGeneration.GenerateMaze(numRows, numCols, out MazeBlockAbstract[][] maze);
-
+            
+            // Start building the maze in the scene from the abstract data
             Bounds planeRendererBounds = planeRenderer.bounds;
             Vector3 planeCenter = planeRendererBounds.center;
             
@@ -167,8 +176,6 @@ namespace Maze
             scaleMultiplier = 0;
             scaleMultiplierTween.Start(1, WALL_SCALE_TIME);
             Vector3 goalWallScale = new Vector3(BLOCK_SIZE, WALL_HEIGHT, BLOCK_SIZE);
-            
-            // Tween loop
             while (scaleMultiplier < 1)
             {
                 for (int i = 0; i < numRows; i++)
@@ -190,7 +197,7 @@ namespace Maze
                 yield return null;
             }
             
-            // Set final values loop
+            // Ensure all final values are set correctly after the scaling tween
             for (int i = 0; i < numRows; i++)
             {
                 for (int j = 0; j < numCols; j++)
@@ -205,24 +212,24 @@ namespace Maze
             }
             
             // Set up lights in every other block, alternating start column on each row.
-            // The start and finish blocks gets special lights regardless.
+            // The start and finish blocks gets special lights and materials.
             lights.Clear();
+            MazeBlock startBlock = blocks[numRows - 1][0];
+            MazeBlock endBlock = blocks[0][numCols - 1];
             for (int i = 0; i < numRows; i++)
             {
                 bool placeLight = i % 2 == 0 ? true : false;
                 
                 for (int j = 0; j < numCols; j++)
                 {
-                    bool isEndBlock = i == 0 && j == numCols - 1;
-                    bool isStartBlock = i == numRows - 1 && j == 0;
-                    
-                    if (!placeLight && !isStartBlock && !isEndBlock)
+                    MazeBlock block = blocks[i][j];
+
+                    if (!placeLight && block != startBlock && block != endBlock)
                     {
                         placeLight = true;
                         continue;
                     }
 
-                    MazeBlock block = blocks[i][j];
                     GameObject lightGameObject = new GameObject("Light ({i})({j})");
                     Transform lightTransform = lightGameObject.transform;
                     Transform blockTransform = block.transform;
@@ -232,20 +239,21 @@ namespace Maze
                     Light addedLight = lightGameObject.AddComponent<Light>();
                     lights.Add(addedLight);
                     addedLight.type = LightType.Point;
-                    if (isEndBlock)
+                    if (block == endBlock)
                     {
-                        // TODO: add trigger box on ending block
+                        block.SetMaterial(endBlockMaterial);
                         block.CreateTriggerBox();
                         block.OnPlayerEnterBlock += HandlePlayerEnterEndBlock;
                         addedLight.color = EndBlockLightColor;
-                        addedLight.intensity = 2f;
+                        addedLight.intensity = 2;
                         addedLight.range = WALL_HEIGHT * 2;
-                        
+
                     }
-                    else if (isStartBlock)
+                    else if (block == startBlock)
                     {
+                        block.SetMaterial(startBlockMaterial);
                         addedLight.color = StartBlockLightColor;
-                        addedLight.intensity = 2f;
+                        addedLight.intensity = 2;
                         addedLight.range = WALL_HEIGHT * 2;
                     }
                     else
@@ -257,10 +265,24 @@ namespace Maze
 
                     placeLight = false;
 
-                    yield return new WaitForSecondsRealtime(0.01f);
+                    // Creates staggered lighting turn-on effect
+                    yield return new WaitForSeconds(0.01f);
                 }
             }
             
+            // Look at the ending block so we know where the maze exit is
+            // TODO: clean up this whole transition block
+            yield return new WaitForSeconds(0.5f);
+            Vector3 mapViewCameraPosition = MazeCamera.Instance.Position;
+            if (endBlock.BoxCollider != null)
+            {
+                MazeCamera.Instance.FitBoundsInView(endBlock.BoxCollider.bounds, CAMERA_MOVE_DURATION, false);
+            }
+            yield return new WaitForSeconds(CAMERA_MOVE_DURATION);
+            FindObjectOfType<MazeScreen>().PlayExitSplash();
+            yield return new WaitForSeconds(1.5f);
+            MazeCamera.Instance.MoveToPosition(mapViewCameraPosition, CAMERA_MOVE_DURATION);
+
             // Instantiate the player at the starting block
             // (if there is only one block, this is also the ending block)
             if (player == null)
@@ -270,7 +292,9 @@ namespace Maze
                     startBlockPosition + Vector3.up * 5,
                     Quaternion.identity);
             }
-            
+
+            yield return new WaitForSeconds(1);
+
             OnMazeGenerationCompleted?.Invoke();
         }
 

@@ -26,6 +26,7 @@ namespace UI
 
         private void Awake()
         {
+            MazeGenerator.OnMazeGenerationStarted += HandleMazeGenerationStarted;
             MazeGenerator.OnMazeGenerationCompleted += HandleMazeGenerationCompleted;
             MazeGenerator.OnPlayerEnteredEndBlock += HandlePlayerEnteredEndBlock;
             PlayerControls.OnPlayerControlsEnabled += HandlePlayerControlsEnabled;
@@ -38,6 +39,7 @@ namespace UI
 
         private void OnDestroy()
         {
+            MazeGenerator.OnMazeGenerationStarted -= HandleMazeGenerationStarted;
             MazeGenerator.OnMazeGenerationCompleted -= HandleMazeGenerationCompleted;
             MazeGenerator.OnPlayerEnteredEndBlock -= HandlePlayerEnteredEndBlock;
             PlayerControls.OnPlayerControlsEnabled -= HandlePlayerControlsEnabled;
@@ -82,6 +84,11 @@ namespace UI
             fadeOverlay.Fade(Color.black, alpha: 0, duration: 1, fromAlpha: 1);
         }
 
+        private void HandleMazeGenerationStarted()
+        {
+            SetScreenActive(mazeScreen, true);
+        }
+
         private void HandleMazeGenerationCompleted()
         {
             // Don't show maze screen if player wins maze immediately.
@@ -90,14 +97,8 @@ namespace UI
                 return;
             }
             
-            mazeScreen.OnScreenFadeInCompleted += handleScreenFadeInCompleted;
             SetScreenActive(mazeScreen, true);
-
-            void handleScreenFadeInCompleted()
-            {
-                mazeScreen.OnScreenFadeInCompleted -= handleScreenFadeInCompleted;
-                mazeScreen.PlayControlsTutorial();
-            }
+            mazeScreen.ShowRestartAndTimerGroup();
         }
         
         private void HandlePlayerEnteredEndBlock()

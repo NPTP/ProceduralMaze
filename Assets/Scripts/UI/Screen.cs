@@ -28,6 +28,8 @@ namespace UI
         {
             canvasGroup.blocksRaycasts = false;
 
+            OnStartFadeOut();
+            
             if (instant)
             {
                 canvasGroup.alpha = 0;
@@ -42,6 +44,8 @@ namespace UI
         public void FadeIn(bool instant = false)
         {
             canvasGroup.blocksRaycasts = true;
+
+            OnStartFadeIn();
             
             if (instant)
             {
@@ -53,5 +57,15 @@ namespace UI
             fadeTween.Start(() => canvasGroup.alpha, a => canvasGroup.alpha = a, 1, SCREEN_FADE_TIME,
                 () => OnScreenFadeInCompleted?.Invoke());
         }
+        
+        /// <summary>
+        /// Performed at beginning of fade out. Override for custom behaviour at this time.
+        /// </summary>
+        protected virtual void OnStartFadeOut() { }
+
+        /// <summary>
+        /// Performed at beginning of fade in. Override for custom behaviour at this time.
+        /// </summary>
+        protected virtual void OnStartFadeIn() { }
     }
 }
