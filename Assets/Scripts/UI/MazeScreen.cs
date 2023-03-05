@@ -10,6 +10,7 @@ namespace UI
 
         [SerializeField] private Button restartButton;
         [SerializeField] private TimerUI timerUI;
+        [SerializeField] private ControlsTutorial controlsTutorial;
         
         private void OnEnable()
         {
@@ -20,16 +21,23 @@ namespace UI
         {
             restartButton.onClick.RemoveListener(HandleRestartButtonClicked);
             timerUI.ResetTimer();
+            controlsTutorial.Hide();
         }
 
         private void HandleRestartButtonClicked()
         {
+            controlsTutorial.Hide();
             OnRestartMaze?.Invoke(this);
         }
 
         public void BeginMazeTimer()
         {
             timerUI.StartTimer();
+        }
+
+        public void PlayControlsTutorial()
+        {
+            controlsTutorial.Play();
         }
     }
 }

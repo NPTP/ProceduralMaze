@@ -79,7 +79,14 @@ namespace UI
 
         private void HandleMazeGenerationCompleted()
         {
+            mazeScreen.OnScreenFadeInCompleted += handleScreenFadeInCompleted;
             SetScreenActive(mazeScreen, true);
+
+            void handleScreenFadeInCompleted()
+            {
+                mazeScreen.OnScreenFadeInCompleted -= handleScreenFadeInCompleted;
+                mazeScreen.PlayControlsTutorial();
+            }
         }
         
         private void HandleRestartMaze(MazeScreen ms)

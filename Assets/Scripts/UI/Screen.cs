@@ -1,3 +1,4 @@
+using System;
 using Tools;
 using UnityEngine;
 
@@ -6,6 +7,9 @@ namespace UI
     [RequireComponent(typeof(CanvasGroup))]
     public class Screen : MonoBehaviour
     {
+        public event Action OnScreenFadeInCompleted;
+        public event Action OnScreenFadeOutCompleted;
+        
         private const float SCREEN_FADE_TIME = 0.5f;
         
         [SerializeField] private CanvasGroup canvasGroup;
@@ -31,7 +35,8 @@ namespace UI
             }
             
             fadeTween.Stop();
-            fadeTween.Start(() => canvasGroup.alpha, a => canvasGroup.alpha = a, 0, SCREEN_FADE_TIME);
+            fadeTween.Start(() => canvasGroup.alpha, a => canvasGroup.alpha = a, 0, SCREEN_FADE_TIME,
+                () => OnScreenFadeOutCompleted?.Invoke());
         }
         
         public void FadeIn(bool instant = false)
@@ -45,7 +50,8 @@ namespace UI
             }
             
             fadeTween.Stop();
-            fadeTween.Start(() => canvasGroup.alpha, a => canvasGroup.alpha = a, 1, SCREEN_FADE_TIME);
+            fadeTween.Start(() => canvasGroup.alpha, a => canvasGroup.alpha = a, 1, SCREEN_FADE_TIME,
+                () => OnScreenFadeInCompleted?.Invoke());
         }
     }
 }

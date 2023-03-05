@@ -278,6 +278,7 @@ namespace MazeGeneration
                     light.type = LightType.Point;
                     if (isEndBlock)
                     {
+                        // TODO: add trigger box on ending block
                         light.color = endBlockLightColor;
                         light.intensity = 2f;
                         light.range = WALL_HEIGHT * 2;
