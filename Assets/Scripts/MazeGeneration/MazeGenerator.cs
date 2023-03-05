@@ -13,6 +13,7 @@ namespace MazeGeneration
         /// Called when the maze generation begins. Sends the goal position and scale.
         /// </summary>
         public static event Action<Vector3, Vector3> OnMazeGenerationBegun;
+        public static event Action OnMazeGenerationCompleted;
         
         /// <summary>
         /// Clockwise cardinal directions
@@ -299,6 +300,13 @@ namespace MazeGeneration
                     yield return new WaitForSecondsRealtime(0.01f);
                 }
             }
+            
+            OnMazeGenerationCompleted?.Invoke();
+        }
+
+        public static void TearDown()
+        {
+            // TODO:
         }
     }
 }

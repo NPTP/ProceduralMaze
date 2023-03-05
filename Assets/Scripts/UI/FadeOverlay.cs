@@ -7,11 +7,13 @@ namespace UI
 {
     /// <summary>
     /// UI-covering colored fade overlay for transitions.
+    /// The screen is blocked by the overlay during a fade to prevent
+    /// early or late button presses.
     /// </summary>
     [RequireComponent(typeof(Image))]
     public class FadeOverlay : MonoBehaviour
     {
-        public event Action OnFadeCompleted;
+        public event Action<FadeOverlay> OnFadeCompleted;
     
         [SerializeField] private Image fadeImage;
 
@@ -28,28 +30,16 @@ namespace UI
             SetAlpha(0);
         }
 
-        private void Awake()
-        {
-            // Start by gracefully uncovering the screen
-            fadeImage.color = Color.black;
-            SetAlpha(1);
-        }
-
-        private void Start()
-        {
-            Fade(Color.black, 0, 1);
-        }
-
         /// <summary>
         /// Fade the overlay with the given color to the given alpha in the given duration.
         /// Interrupts any previous fade.
         /// Optionally specify scaled or unscaled time (default unscaled).
         /// </summary>
-        public void Fade(Color color, float alpha, float duration, bool raycastTargetOnComplete = false)
+        public void Fade(Color color, float alpha, float duration, float fromAlpha = -1)
         {
             fadeTween.Stop();
 
-            float initialAlpha = GetAlpha();
+            float initialAlpha = fromAlpha is < 0 or > 1 ? GetAlpha() : fromAlpha;
             fadeImage.color = color;
             SetAlpha(initialAlpha);
         
@@ -58,8 +48,8 @@ namespace UI
             fadeTween.Start(GetAlpha, SetAlpha, alpha, duration,
                 callbackArgument: () =>
                 {
-                    fadeImage.raycastTarget = raycastTargetOnComplete;
-                    OnFadeCompleted?.Invoke();
+                    fadeImage.raycastTarget = false;
+                    OnFadeCompleted?.Invoke(this);
                 });
         }
 
