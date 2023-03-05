@@ -23,7 +23,7 @@ namespace UI
         private void Awake()
         {
             MazeGenerator.OnMazeGenerationCompleted += HandleMazeGenerationCompleted;
-            PlayerControls.OnInputActionPerformed += HandleInputActionPerformed;
+            PlayerControls.OnPlayerControlsEnabled += HandlePlayerControlsEnabled;
 
             if (mazeScreen != null)
             {
@@ -34,12 +34,32 @@ namespace UI
         private void OnDestroy()
         {
             MazeGenerator.OnMazeGenerationCompleted -= HandleMazeGenerationCompleted;
-            PlayerControls.OnInputActionPerformed -= HandleInputActionPerformed;
+            PlayerControls.OnPlayerControlsEnabled -= HandlePlayerControlsEnabled;
 
             if (mazeScreen != null)
             {
                 mazeScreen.OnRestartMaze -= HandleRestartMaze;
             }
+        }
+
+        private void HandlePlayerControlsEnabled(PlayerControls playerControls)
+        {
+            // Subscribe only once the controls are available.
+            playerControls.OnInputActionPerformed += HandleInputActionPerformed;
+        }
+        
+        private void HandlePlayerControlsDisabled(PlayerControls playerControls)
+        {
+            // Unsubscribe when the controls are disabled
+            playerControls.OnInputActionPerformed -= HandleInputActionPerformed;
+        }
+
+        private void HandleInputActionPerformed(PlayerControls playerControls)
+        {
+            // Unsubscribe immediately, as we only need to catch the first player input
+            // to start the timer.
+            playerControls.OnInputActionPerformed -= HandleInputActionPerformed;
+            mazeScreen.BeginMazeTimer();
         }
 
         private void Start()
@@ -74,15 +94,6 @@ namespace UI
                 MazeGenerator.TearDown();
                 SetUpSceneStartUI();
             }
-        }
-        
-                
-        private void HandleInputActionPerformed(PlayerControls playerControls)
-        {
-            // Unsubscribe immediately, as we only need to catch the first player input
-            // to start the timer.
-            PlayerControls.OnInputActionPerformed -= HandleInputActionPerformed;
-            mazeScreen.BeginMazeTimer();
         }
 
         private void SetScreenActive(Screen screen, bool active, bool instant = false)

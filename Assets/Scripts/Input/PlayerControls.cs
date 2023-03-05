@@ -9,8 +9,10 @@ namespace Input
     {
         private const float MAX_TURN_RADIANS_DELTA = 10f;
         private const float MAX_TURN_MAGNITUDE_DELTA = 10f;
-        
-        public static event Action<PlayerControls> OnInputActionPerformed; 
+
+        public static event Action<PlayerControls> OnPlayerControlsEnabled; 
+        public static event Action<PlayerControls> OnPlayerControlsDisabled; 
+        public event Action<PlayerControls> OnInputActionPerformed; 
 
         [SerializeField] private float playerMoveSpeed;
         [SerializeField] private InputAction playerControlsInputAction;
@@ -37,12 +39,14 @@ namespace Input
         {
             playerControlsInputAction.Enable();
             playerControlsInputAction.performed += HandlePlayercontrolsInputActionPerformed;
+            OnPlayerControlsEnabled?.Invoke(this);
         }
 
         private void OnDisable()
         {
             playerControlsInputAction.Disable();
             playerControlsInputAction.performed -= HandlePlayercontrolsInputActionPerformed;
+            OnPlayerControlsDisabled?.Invoke(this);
         }
 
         private void HandlePlayercontrolsInputActionPerformed(InputAction.CallbackContext context)
