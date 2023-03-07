@@ -1,4 +1,4 @@
 # Procedural Maze
-## LogicalDox interview assignment
+## Unity Project
 Nick Perrin
 March 2023
