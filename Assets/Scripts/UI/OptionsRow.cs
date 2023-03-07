@@ -5,6 +5,9 @@ using UnityEngine.UI;
 
 namespace UI
 {
+    /// <summary>
+    /// A row used for changing maze generation options.
+    /// </summary>
     public class OptionsRow : MonoBehaviour
     {
         /// <summary>

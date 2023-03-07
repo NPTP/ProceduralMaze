@@ -5,8 +5,9 @@ using UnityEngine;
 namespace Tools
 {
     /// <summary>
-    /// Class for easy management of tweens between values (float tweens only for the sake of this exercise).
-    /// Tweens move on a parabolic rather than linear curve.
+    /// Class for easy management of float tweens between values.
+    /// Tween curve is customizable.
+    /// Tweens run on unscaled time.
     /// </summary>
     public class Tween
     {
@@ -25,6 +26,12 @@ namespace Tools
         {
         }
 
+        /// <summary>
+        /// Create a tween.
+        /// </summary>
+        /// <param name="getter">Function returning a float that gets the desired value</param>
+        /// <param name="setter">Action that sets the value</param>
+        /// <param name="curve">Optional desired tween curve</param>
         public Tween(Func<float> getter, Action<float> setter, Curve curve = Curve.Quadratic)
         {
             AssignProperties(getter, setter);
@@ -36,6 +43,15 @@ namespace Tools
             this.setter = setterArgument;
         }
 
+        /// <summary>
+        /// Start the tween.
+        /// </summary>
+        /// <param name="getterArgument">Function returning a float that gets the desired value</param>
+        /// <param name="setterArgument">Action that sets the value</param>
+        /// <param name="endValueArgument">The desired value of the float at the end of the tween</param>
+        /// <param name="durationArgument">The duration of the tween</param>
+        /// <param name="callbackArgument">Optional callback when tween completes</param>
+        /// <param name="curveArgument">Optional desired tween curve</param>
         public void Start(Func<float> getterArgument, Action<float> setterArgument, float endValueArgument,
             float durationArgument, Action callbackArgument = null, Curve curveArgument = Curve.Quadratic)
         {
@@ -43,6 +59,13 @@ namespace Tools
             Start(endValueArgument, durationArgument, callbackArgument, curveArgument);
         }
 
+        /// <summary>
+        /// Start the tween.
+        /// </summary>
+        /// <param name="endValue">The desired value of the float at the end of the tween</param>
+        /// <param name="duration">The duration of the tween</param>
+        /// <param name="callback">Optional callback when tween completes</param>
+        /// <param name="curveArgument">Optional desired tween curve</param>
         public void Start(float endValue, float duration, Action callback = null, Curve curveArgument = Curve.Quadratic)
         {
             if (getter == null || setter == null)
@@ -55,6 +78,9 @@ namespace Tools
                 TweenRoutine(getter, setter, endValue, duration, callback,curveArgument));
         }
 
+        /// <summary>
+        /// Stop the tween.
+        /// </summary>
         public void Stop()
         {
             if (tweenCoroutine != null)
@@ -89,6 +115,12 @@ namespace Tools
             callback?.Invoke();
         }
 
+        /// <summary>
+        /// Convert a linear input to a curved output.
+        /// </summary>
+        /// <param name="curve">The desired curve</param>
+        /// <param name="input">The linear input value</param>
+        /// <returns>A curved output value</returns>
         private static float GetOutputFromCurve(Curve curve, float input)
         {
             switch (curve)

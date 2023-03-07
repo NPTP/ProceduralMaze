@@ -4,8 +4,11 @@ using UnityEngine;
 
 namespace UI
 {
+    /// <summary>
+    /// Abstract base class for a UI screen. Handles basic transition logic.
+    /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
-    public class Screen : MonoBehaviour
+    public abstract class Screen : MonoBehaviour
     {
         public event Action OnScreenFadeInCompleted;
         public event Action OnScreenFadeOutCompleted;

@@ -15,8 +15,11 @@ namespace Maze
         [SerializeField] private GameObject westWall;
 
         private BoxCollider boxCollider;
-        public BoxCollider BoxCollider => boxCollider;
 
+        /// <summary>
+        /// Given an abstract maze block, match this game object maze block's wall configuration to it.
+        /// </summary>
+        /// <param name="mazeBlockAbstract">The abstract maze block to match</param>
         public void MatchAbstractBlock(MazeBlockAbstract mazeBlockAbstract)
         {
             if (!mazeBlockAbstract.NorthWall)
@@ -53,6 +56,23 @@ namespace Maze
             {
                 rdr.sharedMaterial = material;
             }
+        }
+
+        public Bounds GetRendererBounds()
+        {
+            Bounds bounds = new Bounds();
+            
+            Renderer[] renderers = GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 0)
+            {
+                bounds = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++)
+                {
+                    bounds.Encapsulate(renderers[i].bounds);
+                }
+            }
+
+            return bounds;
         }
         
         private void OnTriggerEnter(Collider other)

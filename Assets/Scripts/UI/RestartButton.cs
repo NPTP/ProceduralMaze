@@ -4,10 +4,13 @@ using UnityEngine.UI;
 
 namespace UI
 {
+    /// <summary>
+    /// Button that sends a special restart signal to reset the scene.
+    /// </summary>
     [RequireComponent(typeof(Button))]
     public class RestartButton : MonoBehaviour
     {
-        public static event Action OnRestartButtonClicked;
+        public static event Action OnAnyRestartButtonClicked;
         
         [SerializeField] private Button restartButton;
 
@@ -31,7 +34,7 @@ namespace UI
 
         private void HandleRestartButtonClicked()
         {
-            OnRestartButtonClicked?.Invoke();
+            OnAnyRestartButtonClicked?.Invoke();
         }
     }
 }

@@ -5,6 +5,9 @@ using UnityEngine.InputSystem;
 
 namespace Input
 {
+    /// <summary>
+    /// Class handling player input.
+    /// </summary>
     [RequireComponent(typeof(InputAction), typeof(Rigidbody))]
     public class PlayerControls : MonoBehaviour
     {
@@ -13,7 +16,7 @@ namespace Input
 
         public static event Action<PlayerControls> OnPlayerControlsEnabled; 
         public static event Action<PlayerControls> OnPlayerControlsDisabled; 
-        public event Action<PlayerControls> OnInputActionPerformed; 
+        public event Action<PlayerControls> OnInputActionPerformed;
 
         [SerializeField] private float playerMoveSpeed;
         [SerializeField] private InputAction playerControlsInputAction;

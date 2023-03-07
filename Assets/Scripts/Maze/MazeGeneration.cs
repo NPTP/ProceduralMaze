@@ -25,7 +25,7 @@ namespace Maze
         /// </summary>
         /// <param name="numRows">Number of rows the maze will have</param>
         /// <param name="numCols">Number of columns the maze will have</param>
-        /// <returns>The output 2D array representing the generated maze</returns>
+        /// <returns>The 2D array representing the generated maze</returns>
         public static MazeBlockAbstract[][] GenerateMaze(int numRows, int numCols)
         {
             // Populate the maze block array with new blocks
@@ -55,15 +55,9 @@ namespace Maze
             MazeBlockAbstract thisBlockAbstract = mazeBlocks[row][col];
             thisBlockAbstract.Visited = true;
 
-            Direction[] directions = new[]
-            {
-                Direction.North,
-                Direction.East,
-                Direction.South,
-                Direction.West
-            };
+            Direction[] directions = new[] { Direction.North, Direction.East, Direction.South, Direction.West };
 
-            // Shuffle the order of directions to choose a random maze block.
+            // Shuffle the order of directions to choose a random neighbor block to explore
             for (int i = directions.Length - 1; i > 0; i--)
             {
                 int randomIndex = Random.Range(0, i + 1);
@@ -73,6 +67,7 @@ namespace Maze
             for (int i = 0; i < directions.Length; i++)
             {
                 Direction direction = directions[i];
+                
                 switch (direction)
                 {
                     case Direction.North when row - 1 >= 0 && !mazeBlocks[row - 1][col].Visited:

@@ -2,6 +2,9 @@ using UnityEngine;
 
 namespace UI
 {
+    /// <summary>
+    /// UI element that shows & animates the arrow controls onscreen.
+    /// </summary>
     [RequireComponent(typeof(RectTransform))]
     public class ControlsTutorial : MonoBehaviour
     {

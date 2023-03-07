@@ -14,15 +14,16 @@ namespace Maze
     /// </summary>
     public class MazeGenerator : MonoBehaviour
     {
+        private const string NUM_ROWS_PLAYERPREFS_KEY = "NumRows";
+        private const string NUM_COLS_PLAYERPREFS_KEY = "NumCols";
+        
         private const float BLOCK_SIZE = 10f;
         private const float WALL_HEIGHT = 10f;
         private const float PLANE_SCALE_TIME = 1.5f;
         private const float WALL_SCALE_TIME = 1f;
-        private const float LIGHT_STAGGER_DELAY = 0.01f;
-        private const int PLANE_NUM_ROTATIONS = 2;
-        private const string NUM_ROWS_PLAYERPREFS_KEY = "NumRows";
-        private const string NUM_COLS_PLAYERPREFS_KEY = "NumCols";
+        private const float LIGHT_INSTANTIATE_STAGGER_DELAY = 0.01f;
         private const float CAMERA_MOVE_DURATION = 0.5f;
+        private const int NUM_PLANE_ROTATIONS = 2;
         
         public static event Action<MazeGenerator> OnMazeGenerationStarted;
         public static event Action<MazeGenerator> OnMazeGenerationCompleted;
@@ -59,6 +60,16 @@ namespace Maze
             UIManager.OnMazeRestart -= HandleMazeRestart;
             GenerationScreen.OnGenerateButtonClicked -= HandleGenerationButtonClicked;
         }
+        
+        public static void SetNumRows(int numRows)
+        {
+            PlayerPrefs.SetInt(NUM_ROWS_PLAYERPREFS_KEY, numRows);
+        }
+
+        public static void SetNumCols(int numCols)
+        {
+            PlayerPrefs.SetInt(NUM_COLS_PLAYERPREFS_KEY, numCols);
+        }
 
         private void HandleGenerationButtonClicked()
         {
@@ -75,23 +86,15 @@ namespace Maze
             GenerationScreen.OnGenerateButtonClicked += HandleGenerationButtonClicked;
         }
 
-        public static void SetNumRows(int numRows)
-        {
-            PlayerPrefs.SetInt(NUM_ROWS_PLAYERPREFS_KEY, numRows);
-        }
-
-        public static void SetNumCols(int numCols)
-        {
-            PlayerPrefs.SetInt(NUM_COLS_PLAYERPREFS_KEY, numCols);
-        }
-
         private IEnumerator GenerationRoutine()
         {
             OnMazeGenerationStarted?.Invoke(this);
             
-            Transform planeTransform = ConstructPlane();
+            mazeParent = new GameObject("Maze").transform;
+            planeRenderer = ConstructPlaneAndGetRenderer();
+            Transform planeTransform = planeRenderer.transform;
 
-            Vector3 goalScale = GetGoalScale(planeTransform);
+            Vector3 goalScale = GetGoalPlaneScale(planeTransform);
 
             // Move the camera so it can see the full maze generation animations
             planeTransform.localScale = goalScale;
@@ -131,9 +134,9 @@ namespace Maze
         }
 
         /// <summary>
-        /// Instantiate the player to drop in at the given block.
+        /// Instantiate the player to drop into the maze at the given block.
         /// </summary>
-        /// <param name="block"></param>
+        /// <param name="block">The maze block for the player to drop into</param>
         private void InstantiatePlayerAtBlock(MazeBlock block)
         {
             if (player != null)
@@ -146,7 +149,7 @@ namespace Maze
         }
 
         /// <summary>
-        /// Get the position to spawn the first block at the top left of the maze floor plane.
+        /// Get the position to spawn the first block at the top left of the maze floor plane (ie row 0, column 0).
         /// </summary>
         /// <returns>The world space position where the top left block should be spawned.</returns>
         private Vector3 GetTopLeftBlockPosition()
@@ -168,11 +171,12 @@ namespace Maze
         private IEnumerator SetUpLights(MazeBlock startBlock, MazeBlock endBlock)
         {
             lights.Clear();
-            for (int i = 0; i < NumRows; i++)
+            
+            for (int i = 0; i < blocks.Length; i++)
             {
                 bool placeLight = i % 2 == 0;
 
-                for (int j = 0; j < NumCols; j++)
+                for (int j = 0; j < blocks[i].Length; j++)
                 {
                     MazeBlock block = blocks[i][j];
 
@@ -187,10 +191,10 @@ namespace Maze
                     Transform blockTransform = block.transform;
                     lightTransform.position = blockTransform.position;
                     lightTransform.parent = blockTransform;
-
                     Light addedLight = lightGameObject.AddComponent<Light>();
-                    lights.Add(addedLight);
                     addedLight.type = LightType.Point;
+                    lights.Add(addedLight);
+                    
                     if (block == endBlock)
                     {
                         block.SetMaterial(endBlockMaterial);
@@ -217,7 +221,7 @@ namespace Maze
                     placeLight = false;
 
                     // Creates staggered lighting turn-on effect
-                    yield return new WaitForSeconds(LIGHT_STAGGER_DELAY);
+                    yield return new WaitForSeconds(LIGHT_INSTANTIATE_STAGGER_DELAY);
                 }
             }
         }
@@ -247,9 +251,9 @@ namespace Maze
 
             void setBlockScaleAndYPosition(Vector3 scale, float yPosition)
             {
-                for (int i = 0; i < NumRows; i++)
+                for (int i = 0; i < blocks.Length; i++)
                 {
-                    for (int j = 0; j < NumCols; j++)
+                    for (int j = 0; j < blocks[i].Length; j++)
                     {
                         Transform blockTransform = blocks[i][j].transform;
                         blockTransform.localScale = scale;
@@ -266,7 +270,7 @@ namespace Maze
         /// <param name="mazeAbstract">The abstract representation of the maze</param>
         /// <param name="topLeftBlockPosition">The top left block position, matching the first entry of
         /// the abstract maze, where maze[i][j] gives row i and column j from the top left down</param>
-        /// <returns></returns>
+        /// <returns>The 2D array containing the in-scene maze blocks</returns>
         private MazeBlock[][] ConstructMazeBlocks(MazeBlockAbstract[][] mazeAbstract, Vector3 topLeftBlockPosition)
         {
             blocks = new MazeBlock[mazeAbstract.Length][];
@@ -311,7 +315,7 @@ namespace Maze
             {
                 planeTransform.localScale = goalScale * scaleMultiplier;
                 planeTransform.rotation = Quaternion.Euler(eulerRotation.x,
-                    (PLANE_NUM_ROTATIONS * 360f * scaleMultiplier) % 360f, eulerRotation.z);
+                    (NUM_PLANE_ROTATIONS * 360f * scaleMultiplier) % 360f, eulerRotation.z);
                 yield return null;
             }
             
@@ -319,19 +323,28 @@ namespace Maze
             planeTransform.rotation = Quaternion.identity;
         }
 
-        private Transform ConstructPlane()
+        /// <summary>
+        /// Build the maze floor plane and return its renderer for usage
+        /// </summary>
+        /// <returns>The maze floor plane renderer</returns>
+        private Renderer ConstructPlaneAndGetRenderer()
         {
-            mazeParent = new GameObject("Maze").transform;
             GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
             plane.name = "MazeFloorPlane";
             Transform planeTransform = plane.transform;
             planeTransform.parent = mazeParent;
-            planeRenderer = plane.GetComponent<Renderer>();
-            planeRenderer.sharedMaterial = mazePlaneMaterial;
-            return planeTransform;
+            Renderer rdr = plane.GetComponent<Renderer>();
+            rdr.sharedMaterial = mazePlaneMaterial;
+            return rdr;
         }
 
-        private Vector3 GetGoalScale(Transform planeTransform)
+        /// <summary>
+        /// Get the desired scale for the maze floor plane based on the
+        /// user's chosen maze sizing.
+        /// </summary>
+        /// <param name="planeTransform">Transform of the maze floor plane</param>
+        /// <returns>A vector representing the goal end scale of the plane</returns>
+        private Vector3 GetGoalPlaneScale(Transform planeTransform)
         {
             Vector3 planeSize = planeRenderer.bounds.size;
             float startXSize = planeSize.x;
@@ -357,11 +370,16 @@ namespace Maze
             OnPlayerEnteredEndBlock?.Invoke(this);
         }
 
+        /// <summary>
+        /// Focus the camera on the given block.
+        /// </summary>
+        /// <param name="block">The block to focus on</param>
         private void FocusCameraOnBlock(MazeBlock block)
         {
-            if (block.BoxCollider != null)
+            Bounds blockRendererBounds = block.GetRendererBounds();
+            if (blockRendererBounds.size != Vector3.zero)
             {
-                MazeCamera.Instance.FitBoundsInView(block.BoxCollider.bounds, CAMERA_MOVE_DURATION, false);
+                MazeCamera.Instance.FitBoundsInView(blockRendererBounds, CAMERA_MOVE_DURATION, false);
             }
         }
 
@@ -371,7 +389,7 @@ namespace Maze
             Destroy(player);
             player = null;
 
-                // Tear down the maze
+            // Tear down the maze
             for (int i = 0; i < blocks.Length; i++)
             {
                 for (int j = 0; j < blocks[i].Length; j++)
@@ -381,7 +399,6 @@ namespace Maze
 
                 blocks[i] = null;
             }
-
             blocks = null;
 
             // Tear down the lights
@@ -394,10 +411,12 @@ namespace Maze
             // Tear down the plane
             Destroy(planeRenderer.gameObject);
             planeRenderer = null;
-            
+
+            // Tear down the parent object
             Destroy(mazeParent.gameObject);
             mazeParent = null;
-            
+
+            // Clear memory
             Resources.UnloadUnusedAssets();
             GC.Collect();
         }

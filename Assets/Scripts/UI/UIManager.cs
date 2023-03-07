@@ -7,7 +7,7 @@ namespace UI
 {
     /// <summary>
     /// Controller for UI screens and top-level UI behaviours.
-    /// System for showing screens keeps only one screen visible at a time.
+    /// Simple system for showing screens keeps only one screen visible at a time.
     /// </summary>
     public class UIManager : MonoBehaviour
     {
@@ -32,7 +32,8 @@ namespace UI
             MazeGenerator.OnMazeGenerationCompleted += HandleMazeGenerationCompleted;
             MazeGenerator.OnPlayerEnteredEndBlock += HandlePlayerEnteredEndBlock;
             PlayerControls.OnPlayerControlsEnabled += HandlePlayerControlsEnabled;
-            RestartButton.OnRestartButtonClicked += HandleRestartMaze;
+            PlayerControls.OnPlayerControlsDisabled += HandlePlayerControlsDisabled;
+            RestartButton.OnAnyRestartButtonClicked += HandleAnyRestartButtonClicked;
         }
 
         private void OnDestroy()
@@ -41,7 +42,8 @@ namespace UI
             MazeGenerator.OnMazeGenerationCompleted -= HandleMazeGenerationCompleted;
             MazeGenerator.OnPlayerEnteredEndBlock -= HandlePlayerEnteredEndBlock;
             PlayerControls.OnPlayerControlsEnabled -= HandlePlayerControlsEnabled;
-            RestartButton.OnRestartButtonClicked -= HandleRestartMaze;
+            PlayerControls.OnPlayerControlsDisabled -= HandlePlayerControlsDisabled;
+            RestartButton.OnAnyRestartButtonClicked -= HandleAnyRestartButtonClicked;
         }
 
         private void HandlePlayerControlsEnabled(PlayerControls playerControls)
@@ -112,7 +114,7 @@ namespace UI
             SetScreenActive(endScreen, true);
         }
 
-        private void HandleRestartMaze()
+        private void HandleAnyRestartButtonClicked()
         {
             RestartMaze();
         }
@@ -137,6 +139,13 @@ namespace UI
             SetScreenActive(endScreen, false, instant: true);
         }
         
+        /// <summary>
+        /// Set the given screen active/inactive. Keeps track of the currently active screen
+        /// and prevents two screens from being shown at once, fading between them.
+        /// </summary>
+        /// <param name="screen">The screen to set active</param>
+        /// <param name="active">If true, set the screen active. If false, set inactive</param>
+        /// <param name="instant">If true, perform the transition instantly</param>
         private void SetScreenActive(Screen screen, bool active, bool instant = false)
         {
             if (screen == null)

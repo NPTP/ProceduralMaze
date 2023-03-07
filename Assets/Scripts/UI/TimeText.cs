@@ -3,6 +3,9 @@ using UnityEngine;
 
 namespace UI
 {
+    /// <summary>
+    /// Text representing minutes and seconds in the UI.
+    /// </summary>
     [RequireComponent(typeof(TextMeshProUGUI))]
     public class TimeText : MonoBehaviour
     {

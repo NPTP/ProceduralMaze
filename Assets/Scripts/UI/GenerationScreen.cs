@@ -5,6 +5,9 @@ using UnityEngine.UI;
 
 namespace UI
 {
+    /// <summary>
+    /// The starting screen that allows the user to choose the parameters of maze generation.
+    /// </summary>
     public class GenerationScreen : Screen
     {
         public static event Action OnGenerateButtonClicked;

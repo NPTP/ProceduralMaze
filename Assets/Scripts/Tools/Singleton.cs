@@ -4,7 +4,8 @@ using UnityEngine;
 namespace Tools
 {
     /// <summary>
-    /// Either find an instance or create one in the scene.
+    /// Singleton class that either finds an existing instance or creates one in the scene.
+    /// Prevents creating a new instance on application quit.
     /// </summary>
     public class Singleton<T> : MonoBehaviour where T : Component, new()
     {

@@ -1,5 +1,4 @@
 using System.Collections;
-using Maze;
 using Tools;
 using UI;
 using UnityEngine;
@@ -10,15 +9,16 @@ namespace Cameras
     {
         private Camera mainCamera;
         private Coroutine cameraMoveRoutine;
-        private (Vector3, Quaternion) startPositionRotation;
+        private Vector3 sceneStartPosition;
+        private Quaternion sceneStartRotation;
 
         public Vector3 Position => mainCamera.transform.position;
-        public Quaternion Rotation => mainCamera.transform.rotation;
 
         private void Awake()
         {
             mainCamera = Camera.main;
-            startPositionRotation = (mainCamera.transform.position, mainCamera.transform.rotation);
+            sceneStartPosition = mainCamera.transform.position;
+            sceneStartRotation = mainCamera.transform.rotation;
 
             UIManager.OnMazeRestart += HandleMazeRestart;
         }
@@ -31,15 +31,15 @@ namespace Cameras
         private void HandleMazeRestart()
         {
             CoroutineTools.StopAndNullCoroutine(ref cameraMoveRoutine, this);
-            mainCamera.transform.position = startPositionRotation.Item1;
-            mainCamera.transform.rotation = startPositionRotation.Item2;
+            mainCamera.transform.position = sceneStartPosition;
+            mainCamera.transform.rotation = sceneStartRotation;
         }
 
         /// <summary>
-        /// Move the camera to the given position over the course of duration.
+        /// Move the camera to the given position over the course of a given duration.
         /// </summary>
         /// <param name="position">The destination position for the camera.</param>
-        /// <param name="duration">The duration of the transition from camera's current position to the destination.</param>
+        /// <param name="duration">The duration of the transition from the camera's current position to the destination.</param>
         public void MoveToPosition(Vector3 position, float duration)
         {
             CoroutineTools.ReplaceAndStartCoroutine(ref cameraMoveRoutine,
@@ -83,9 +83,9 @@ namespace Cameras
                 yield break;
             }
 
-            float elapsedTime = 0;
             Vector3 startPos = mainCameraTransform.position;
             Quaternion startRotation = mainCameraTransform.localRotation;
+            float elapsedTime = 0;
             
             while (elapsedTime < duration)
             {

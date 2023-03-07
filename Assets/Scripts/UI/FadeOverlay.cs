@@ -33,8 +33,11 @@ namespace UI
         /// <summary>
         /// Fade the overlay with the given color to the given alpha in the given duration.
         /// Interrupts any previous fade.
-        /// Optionally specify scaled or unscaled time (default unscaled).
         /// </summary>
+        /// <param name="color">The color of the fade</param>
+        /// <param name="alpha">The alpha to fade to</param>
+        /// <param name="duration">The duration of the fade</param>
+        /// <param name="fromAlpha">Optional starting alpha argument. If left blank, use the current alpha</param>
         public void Fade(Color color, float alpha, float duration, float fromAlpha = -1)
         {
             fadeTween.Stop();

@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace UI
 {
+    /// <summary>
+    /// The screen displayed when the player reaches the end of the maze.
+    /// </summary>
     public class EndScreen : Screen
     {
         [SerializeField] private TextMeshProUGUI newRecordText;

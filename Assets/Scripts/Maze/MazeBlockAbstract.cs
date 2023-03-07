@@ -1,5 +1,8 @@
 namespace Maze
 {
+    /// <summary>
+    /// Class for abstract maze generation.
+    /// </summary>
     public class MazeBlockAbstract
     {
         public bool Visited;

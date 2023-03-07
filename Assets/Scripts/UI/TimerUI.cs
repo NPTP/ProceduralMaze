@@ -4,13 +4,15 @@ using UnityEngine;
 
 namespace UI
 {
+    /// <summary>
+    /// Timer element in the UI.
+    /// </summary>
     [RequireComponent(typeof(Animator))]
     public class TimerUI : MonoBehaviour
     {
         private static readonly int Idle = Animator.StringToHash("Idle");
         private static readonly int ScalePunch = Animator.StringToHash("ScalePunch");
 
-        [SerializeField] private RectTransform rectTransform;
         [SerializeField] private TimeText timeText;
         [SerializeField] private Animator animator;
 

@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace UI
 {
+    /// <summary>
+    /// The screen displayed when the maze is generated, active and being played.
+    /// </summary>
     public class MazeScreen : Screen
     {
         private static readonly int Splash = Animator.StringToHash("Splash");
@@ -18,13 +21,13 @@ namespace UI
         
         private void OnEnable()
         {
-            RestartButton.OnRestartButtonClicked += HandleRestartButtonClicked;
+            RestartButton.OnAnyRestartButtonClicked += HandleAnyRestartButtonClicked;
             MazeGenerator.OnFocusedOnEndBlock += HandleFocusedOnEndBlock;
         }
         
         private void OnDisable()
         {
-            RestartButton.OnRestartButtonClicked -= HandleRestartButtonClicked;
+            RestartButton.OnAnyRestartButtonClicked -= HandleAnyRestartButtonClicked;
             MazeGenerator.OnFocusedOnEndBlock -= HandleFocusedOnEndBlock;
             timerUI.ResetTimer();
             controlsTutorial.Hide();
@@ -49,7 +52,7 @@ namespace UI
             controlsTutorial.Hide();
         }
 
-        private void HandleRestartButtonClicked()
+        private void HandleAnyRestartButtonClicked()
         {
             controlsTutorial.Hide();
         }
@@ -75,7 +78,7 @@ namespace UI
             timerUI.StopTimer();
         }
 
-        public void PlayExitSplash()
+        private void PlayExitSplash()
         {
             exitSplashAnimator.CrossFade(Splash, 0);
         }
