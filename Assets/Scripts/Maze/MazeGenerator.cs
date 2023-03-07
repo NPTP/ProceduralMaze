@@ -18,6 +18,7 @@ namespace Maze
         private const float WALL_HEIGHT = 10f;
         private const float PLANE_SCALE_TIME = 1.5f;
         private const float WALL_SCALE_TIME = 1f;
+        private const float LIGHT_STAGGER_DELAY = 0.01f;
         private const int PLANE_NUM_ROTATIONS = 2;
         private const string NUM_ROWS_PLAYERPREFS_KEY = "NumRows";
         private const string NUM_COLS_PLAYERPREFS_KEY = "NumCols";
@@ -25,6 +26,7 @@ namespace Maze
         
         public static event Action<MazeGenerator> OnMazeGenerationStarted;
         public static event Action<MazeGenerator> OnMazeGenerationCompleted;
+        public static event Action<MazeGenerator> OnFocusedOnEndBlock;
         public static event Action<MazeGenerator> OnPlayerEnteredEndBlock;
 
         public static int NumRows => PlayerPrefs.GetInt(NUM_ROWS_PLAYERPREFS_KEY, 1);
@@ -41,12 +43,11 @@ namespace Maze
         [SerializeField] private Material endBlockMaterial;
 
         private Renderer planeRenderer;
-        public Renderer PlaneRenderer => planeRenderer;
-        
         private Transform mazeParent;
         private readonly List<Light> lights = new List<Light>();
         private MazeBlock[][] blocks;
         private GameObject player;
+        private Coroutine generationCoroutine;
 
         private void Awake()
         {
@@ -63,7 +64,8 @@ namespace Maze
         {
             GenerationScreen.OnGenerateButtonClicked -= HandleGenerationButtonClicked;
             UIManager.OnMazeRestart += HandleMazeRestart;
-            Generate();
+            
+            CoroutineTools.ReplaceAndStartCoroutine(ref generationCoroutine, GenerationRoutine(), this);
         }
         
         private void HandleMazeRestart()
@@ -83,147 +85,94 @@ namespace Maze
             PlayerPrefs.SetInt(NUM_COLS_PLAYERPREFS_KEY, numCols);
         }
 
-        private void Generate()
+        private IEnumerator GenerationRoutine()
         {
             OnMazeGenerationStarted?.Invoke(this);
             
-            mazeParent = new GameObject("Maze").transform;
+            Transform planeTransform = ConstructPlane();
 
-            GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            plane.name = "MazeFloorPlane";
-            plane.transform.parent = mazeParent;
-            planeRenderer = plane.GetComponent<Renderer>();
-            planeRenderer.sharedMaterial = mazePlaneMaterial;
-            
-            Vector3 planeSize = planeRenderer.bounds.size;
-            float startXSize = planeSize.x;
-            float startZSize = planeSize.z;
-            
-            float goalXSize = NumCols * BLOCK_SIZE;
-            float goalZSize = NumRows * BLOCK_SIZE;
-            
-            Transform planeTransform = plane.transform;
-            Vector3 planeScale = planeTransform.localScale;
-            Vector3 goalScale = new Vector3(
-                planeScale.x * (goalXSize / startXSize),
-                planeScale.y,
-                planeScale.z * (goalZSize / startZSize)
-            );
-            
-            CoroutineHost.StartHostedCoroutine(GenerationRoutine(goalScale));
-        }
+            Vector3 goalScale = GetGoalScale(planeTransform);
 
-        private IEnumerator GenerationRoutine(Vector3 goalScale)
-        {
-            int numRows = NumRows;
-            int numCols = NumCols;
-            Transform planeTransform = planeRenderer.transform;
-            
             // Move the camera so it can see the full maze generation animations
             planeTransform.localScale = goalScale;
             planeTransform.rotation = Quaternion.identity;
             MazeCamera.Instance.FitBoundsInView(planeRenderer.bounds, CAMERA_MOVE_DURATION, true);
             
-            // Perform scaling and rotating of the maze floor plane
-            planeTransform.localScale = Vector3.zero;
-            float scaleMultiplier = 0;
-            Vector3 eulerRotation = planeTransform.rotation.eulerAngles;
-            Tween scaleMultiplierTween = new Tween(() => scaleMultiplier, x => scaleMultiplier = x, Tween.Curve.EaseOutBack);
-            scaleMultiplierTween.Start(1, PLANE_SCALE_TIME);
+            yield return RotateAndScalePlane(planeTransform, goalScale);
 
-            while (scaleMultiplier < 1)
+            MazeBlockAbstract[][] maze = MazeGeneration.GenerateMaze(NumRows, NumCols);
+            
+            Vector3 topLeftBlockPosition = GetTopLeftBlockPosition();
+
+            blocks = ConstructMazeBlocks(maze, topLeftBlockPosition);
+
+            yield return ScaleUpAllWalls(topLeftBlockPosition);
+
+            // Get the start and end blocks of the maze.
+            MazeBlock playerStartBlock = blocks[NumRows - 1][0];
+            MazeBlock playerEndBlock = blocks[0][NumCols - 1];
+            
+            yield return SetUpLights(playerStartBlock, playerEndBlock);
+
+            // Look at the ending block so we know where the maze exit is
+            yield return new WaitForSeconds(0.5f);
+            Vector3 mapViewCameraPosition = MazeCamera.Instance.Position;
+            FocusCameraOnBlock(playerEndBlock);
+            yield return new WaitForSeconds(CAMERA_MOVE_DURATION);
+            OnFocusedOnEndBlock?.Invoke(this);
+            yield return new WaitForSeconds(1.5f);
+            MazeCamera.Instance.MoveToPosition(mapViewCameraPosition, CAMERA_MOVE_DURATION);
+            
+            InstantiatePlayerAtBlock(playerStartBlock);
+
+            yield return new WaitForSeconds(1);
+
+            OnMazeGenerationCompleted?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Instantiate the player to drop in at the given block.
+        /// </summary>
+        /// <param name="block"></param>
+        private void InstantiatePlayerAtBlock(MazeBlock block)
+        {
+            if (player != null)
             {
-                planeTransform.localScale = goalScale * scaleMultiplier;
-                planeTransform.rotation = Quaternion.Euler(eulerRotation.x, (PLANE_NUM_ROTATIONS * 360f * scaleMultiplier) % 360f, eulerRotation.z);
-                yield return null;
+                Destroy(player);
             }
 
-            planeTransform.localScale = goalScale;
-            planeTransform.rotation = Quaternion.identity;
+            Vector3 playerSpawnPosition = block.transform.position + Vector3.up * (WALL_HEIGHT / 2);
+            player = Instantiate(playerPrefab, playerSpawnPosition, Quaternion.identity);
+        }
 
-            // Generate the maze into an abstract data structure grid
-            MazeGeneration.GenerateMaze(numRows, numCols, out MazeBlockAbstract[][] maze);
-            
-            // Start building the maze in the scene from the abstract data
+        /// <summary>
+        /// Get the position to spawn the first block at the top left of the maze floor plane.
+        /// </summary>
+        /// <returns>The world space position where the top left block should be spawned.</returns>
+        private Vector3 GetTopLeftBlockPosition()
+        {
             Bounds planeRendererBounds = planeRenderer.bounds;
             Vector3 planeCenter = planeRendererBounds.center;
-            
-            // Start the block spawn position at the top left corner position on the plane.
-            Vector3 blockStartPos = new Vector3(
-                planeCenter.x - planeRendererBounds.extents.x + BLOCK_SIZE * 0.5f,
-                planeCenter.y,
-                planeCenter.z + planeRendererBounds.extents.z - BLOCK_SIZE * 0.5f);
+            Vector3 topLeftBlockPosition = new Vector3(planeCenter.x - planeRendererBounds.extents.x + BLOCK_SIZE * 0.5f,
+                planeCenter.y, planeCenter.z + planeRendererBounds.extents.z - BLOCK_SIZE * 0.5f);
+            return topLeftBlockPosition;
+        }
 
-            blocks = new MazeBlock[numRows][];
-            
-            for (int i = 0; i < numRows; i++)
-            {
-                blocks[i] = new MazeBlock[numCols];
-                for (int j = 0; j < numCols; j++)
-                {
-                    MazeBlock block = GameObject.Instantiate(mazeBlockPrefab);
-                    block.name = $"Block ({i})({j})";
-                    Transform blockTransform = block.transform;
-                    blockTransform.parent = mazeParent;
-                    blockTransform.position = new Vector3(
-                        blockStartPos.x + BLOCK_SIZE * j,
-                        blockStartPos.y,
-                        blockStartPos.z - BLOCK_SIZE * i);
-
-                    block.MatchAbstractBlock(maze[i][j]);
-                    blocks[i][j] = block;
-                }
-            }
-            
-            // Scale up all the walls simultaneously
-            scaleMultiplier = 0;
-            scaleMultiplierTween.Start(1, WALL_SCALE_TIME);
-            Vector3 goalWallScale = new Vector3(BLOCK_SIZE, WALL_HEIGHT, BLOCK_SIZE);
-            while (scaleMultiplier < 1)
-            {
-                for (int i = 0; i < numRows; i++)
-                {
-                    for (int j = 0; j < numCols; j++)
-                    {
-                        Transform blockTransform = blocks[i][j].transform;
-                        blockTransform.localScale = new Vector3(
-                            goalWallScale.x, 
-                            goalWallScale.y * scaleMultiplier, 
-                            goalWallScale.z);
-                        blockTransform.position = new Vector3(
-                            blockTransform.position.x, 
-                            blockStartPos.y + goalWallScale.y * scaleMultiplier * 0.5f, 
-                            blockTransform.position.z);
-                    }
-                }
-                
-                yield return null;
-            }
-            
-            // Ensure all final values are set correctly after the scaling tween
-            for (int i = 0; i < numRows; i++)
-            {
-                for (int j = 0; j < numCols; j++)
-                {
-                    Transform blockTransform = blocks[i][j].transform;
-                    blockTransform.localScale = goalWallScale;
-                    blockTransform.position = new Vector3(
-                        blockTransform.position.x,
-                        blockStartPos.y + goalWallScale.y * 0.5f,
-                        blockTransform.position.z);
-                }
-            }
-            
-            // Set up lights in every other block, alternating start column on each row.
-            // The start and finish blocks gets special lights and materials.
+        /// <summary>
+        /// Set up lights in every other block, alternating start column on each row.
+        /// The start and finish blocks gets special lights and materials. Lights turning
+        /// on is staggered by a time delay.
+        /// </summary>
+        /// <param name="startBlock">The block the player begins the maze in.</param>
+        /// <param name="endBlock">The block which, if reached by the player, completes the maze</param>
+        private IEnumerator SetUpLights(MazeBlock startBlock, MazeBlock endBlock)
+        {
             lights.Clear();
-            MazeBlock startBlock = blocks[numRows - 1][0];
-            MazeBlock endBlock = blocks[0][numCols - 1];
-            for (int i = 0; i < numRows; i++)
+            for (int i = 0; i < NumRows; i++)
             {
-                bool placeLight = i % 2 == 0 ? true : false;
-                
-                for (int j = 0; j < numCols; j++)
+                bool placeLight = i % 2 == 0;
+
+                for (int j = 0; j < NumCols; j++)
                 {
                     MazeBlock block = blocks[i][j];
 
@@ -233,7 +182,7 @@ namespace Maze
                         continue;
                     }
 
-                    GameObject lightGameObject = new GameObject("Light ({i})({j})");
+                    GameObject lightGameObject = new GameObject($"Light ({i})({j})");
                     Transform lightTransform = lightGameObject.transform;
                     Transform blockTransform = block.transform;
                     lightTransform.position = blockTransform.position;
@@ -250,7 +199,6 @@ namespace Maze
                         addedLight.color = EndBlockLightColor;
                         addedLight.intensity = 2;
                         addedLight.range = WALL_HEIGHT * 2;
-
                     }
                     else if (block == startBlock)
                     {
@@ -269,35 +217,137 @@ namespace Maze
                     placeLight = false;
 
                     // Creates staggered lighting turn-on effect
-                    yield return new WaitForSeconds(0.01f);
+                    yield return new WaitForSeconds(LIGHT_STAGGER_DELAY);
                 }
             }
-            
-            // Look at the ending block so we know where the maze exit is
-            // TODO: clean up this whole transition block
-            yield return new WaitForSeconds(0.5f);
-            Vector3 mapViewCameraPosition = MazeCamera.Instance.Position;
-            FocusCameraOnBlock(endBlock);
-            yield return new WaitForSeconds(CAMERA_MOVE_DURATION);
-            
-            // TODO: big cleanup
-            FindObjectOfType<MazeScreen>().PlayExitSplash();
-            yield return new WaitForSeconds(1.5f);
-            MazeCamera.Instance.MoveToPosition(mapViewCameraPosition, CAMERA_MOVE_DURATION);
+        }
 
-            // Instantiate the player at the starting block
-            // (if there is only one block, this is also the ending block)
-            if (player == null)
+        /// <summary>
+        /// Scale up all maze block walls concurrently.
+        /// </summary>
+        /// <param name="topLeftBlockPosition">The world space position of the top left block of the maze</param>
+        private IEnumerator ScaleUpAllWalls(Vector3 topLeftBlockPosition)
+        {
+            Vector3 goalWallScale = new Vector3(BLOCK_SIZE, WALL_HEIGHT, BLOCK_SIZE);
+            
+            float scaleMultiplier = 0;
+            Tween tween = new Tween(() => scaleMultiplier, x => scaleMultiplier = x, Tween.Curve.EaseOutBack);
+            tween.Start(1, WALL_SCALE_TIME);
+
+            while (scaleMultiplier < 1)
             {
-                Vector3 startBlockPosition = blocks[numRows - 1][0].transform.position;
-                player = GameObject.Instantiate(playerPrefab,
-                    startBlockPosition + Vector3.up * 5,
-                    Quaternion.identity);
+                setBlockScaleAndYPosition(
+                    new Vector3(goalWallScale.x, goalWallScale.y * scaleMultiplier, goalWallScale.z),
+                    topLeftBlockPosition.y + goalWallScale.y * scaleMultiplier * 0.5f);
+                yield return null;
             }
 
-            yield return new WaitForSeconds(1);
+            // Ensure all final values are set correctly after the scaling tween
+            setBlockScaleAndYPosition(goalWallScale, topLeftBlockPosition.y + goalWallScale.y * 0.5f);
 
-            OnMazeGenerationCompleted?.Invoke(this);
+            void setBlockScaleAndYPosition(Vector3 scale, float yPosition)
+            {
+                for (int i = 0; i < NumRows; i++)
+                {
+                    for (int j = 0; j < NumCols; j++)
+                    {
+                        Transform blockTransform = blocks[i][j].transform;
+                        blockTransform.localScale = scale;
+                        Vector3 blockPosition = blockTransform.position;
+                        blockTransform.position = new Vector3(blockPosition.x, yPosition, blockPosition.z);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Start building the real maze in the scene from the abstract data
+        /// </summary>
+        /// <param name="maze">The abstract representation of the maze</param>
+        /// <param name="topLeftBlockPosition">The top left block position, matching the first entry of
+        /// the abstract maze, where maze[i][j] gives row i and column j from the top left down</param>
+        /// <returns></returns>
+        private MazeBlock[][] ConstructMazeBlocks(MazeBlockAbstract[][] maze, Vector3 topLeftBlockPosition)
+        {
+            blocks = new MazeBlock[NumRows][];
+
+            for (int i = 0; i < NumRows; i++)
+            {
+                blocks[i] = new MazeBlock[NumCols];
+                for (int j = 0; j < NumCols; j++)
+                {
+                    MazeBlock block = GameObject.Instantiate(mazeBlockPrefab);
+                    block.name = $"Block ({i})({j})";
+                    Transform blockTransform = block.transform;
+                    blockTransform.parent = mazeParent;
+                    blockTransform.position = new Vector3(
+                        topLeftBlockPosition.x + BLOCK_SIZE * j,
+                        topLeftBlockPosition.y,
+                        topLeftBlockPosition.z - BLOCK_SIZE * i);
+
+                    block.MatchAbstractBlock(maze[i][j]);
+                    blocks[i][j] = block;
+                }
+            }
+
+            return blocks;
+        }
+
+        /// <summary>
+        /// Perform scaling and rotating of the maze floor plane
+        /// </summary>
+        /// <param name="planeTransform">The transform of the maze floor plane</param>
+        /// <param name="goalScale">The goal scale to reach when scaling up the plane</param>
+        private IEnumerator RotateAndScalePlane(Transform planeTransform, Vector3 goalScale)
+        {
+            planeTransform.localScale = Vector3.zero;
+            Vector3 eulerRotation = planeTransform.rotation.eulerAngles;
+            
+            float scaleMultiplier = 0;
+            Tween tween = new Tween(() => scaleMultiplier, x => scaleMultiplier = x, Tween.Curve.EaseOutBack);
+            tween.Start(1, PLANE_SCALE_TIME);
+            
+            while (scaleMultiplier < 1)
+            {
+                planeTransform.localScale = goalScale * scaleMultiplier;
+                planeTransform.rotation = Quaternion.Euler(eulerRotation.x,
+                    (PLANE_NUM_ROTATIONS * 360f * scaleMultiplier) % 360f, eulerRotation.z);
+                yield return null;
+            }
+            
+            planeTransform.localScale = goalScale;
+            planeTransform.rotation = Quaternion.identity;
+        }
+
+        private Transform ConstructPlane()
+        {
+            mazeParent = new GameObject("Maze").transform;
+            GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
+            plane.name = "MazeFloorPlane";
+            Transform planeTransform = plane.transform;
+            planeTransform.parent = mazeParent;
+            planeRenderer = plane.GetComponent<Renderer>();
+            planeRenderer.sharedMaterial = mazePlaneMaterial;
+            return planeTransform;
+        }
+
+        private Vector3 GetGoalScale(Transform planeTransform)
+        {
+            Vector3 planeSize = planeRenderer.bounds.size;
+            float startXSize = planeSize.x;
+            float startZSize = planeSize.z;
+
+            float goalXSize = NumCols * BLOCK_SIZE;
+            float goalZSize = NumRows * BLOCK_SIZE;
+
+            Vector3 planeScale = planeTransform.localScale;
+            Vector3 goalScale = new Vector3(
+                planeScale.x * (goalXSize / startXSize),
+                planeScale.y,
+                planeScale.z * (goalZSize / startZSize)
+            );
+            
+            return goalScale;
         }
 
         private void HandlePlayerEnterEndBlock(MazeBlock endBlock)
@@ -320,8 +370,8 @@ namespace Maze
             // Remove the player
             Destroy(player);
             player = null;
-            
-            // Tear down the maze
+
+                // Tear down the maze
             for (int i = 0; i < blocks.Length; i++)
             {
                 for (int j = 0; j < blocks[i].Length; j++)
@@ -335,9 +385,9 @@ namespace Maze
             blocks = null;
 
             // Tear down the lights
-            for (int i = 0; i < lights.Count; i++)
+            foreach (Light l in lights)
             {
-                Destroy(lights[i].gameObject);
+                Destroy(l.gameObject);
             }
             lights.Clear();
 

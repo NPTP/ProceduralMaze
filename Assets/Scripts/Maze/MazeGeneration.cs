@@ -25,11 +25,11 @@ namespace Maze
         /// </summary>
         /// <param name="numRows">Number of rows the maze will have</param>
         /// <param name="numCols">Number of columns the maze will have</param>
-        /// <param name="maze">The output 2D array representing the generated maze</param>
-        public static void GenerateMaze(int numRows, int numCols, out MazeBlockAbstract[][] maze)
+        /// <returns>The output 2D array representing the generated maze</returns>
+        public static MazeBlockAbstract[][] GenerateMaze(int numRows, int numCols)
         {
             // Populate the maze block array with new blocks
-            maze = new MazeBlockAbstract[numRows][];
+            MazeBlockAbstract[][] maze = new MazeBlockAbstract[numRows][];
             for (int i = 0; i < numRows; i++)
             {
                 maze[i] = new MazeBlockAbstract[numCols];
@@ -40,6 +40,8 @@ namespace Maze
             }
 
             GenerateMazeRecursive(0, 0, maze);
+
+            return maze;
         }
 
         /// <summary>

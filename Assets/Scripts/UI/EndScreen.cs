@@ -36,8 +36,12 @@ namespace UI
         protected override void OnStartFadeOut()
         {
             base.OnStartFadeOut();
-            restartButtonFadeTween.Stop();
-            restartButtonFadeTween = null;
+            if (restartButtonFadeTween != null)
+            {
+                restartButtonFadeTween.Stop();
+                restartButtonFadeTween = null;
+            }
+
             newRecordText.gameObject.SetActive(false);
         }
         

@@ -38,37 +38,17 @@ namespace Input
 
         private void OnEnable()
         {
+            MazeGenerator.OnMazeGenerationCompleted += HandleMazeGenerationCompleted;
             MazeGenerator.OnPlayerEnteredEndBlock += HandlePlayerEnteredEndBlock;
-            
-            playerControlsInputAction.Enable();
-            playerControlsInputAction.performed += HandlePlayercontrolsInputActionPerformed;
-            OnPlayerControlsEnabled?.Invoke(this);
-        }
-
-        private void OnDisable()
-        {
-            MazeGenerator.OnPlayerEnteredEndBlock -= HandlePlayerEnteredEndBlock;
-            
-            DisablePlayerControls();
-        }
-
-        private void DisablePlayerControls()
-        {
-            playerControlsInputAction.Disable();
-            playerControlsInputAction.performed -= HandlePlayercontrolsInputActionPerformed;
-            OnPlayerControlsDisabled?.Invoke(this);
         }
         
-        private void HandlePlayerEnteredEndBlock(MazeGenerator mazeGenerator)
+        private void OnDisable()
         {
+            MazeGenerator.OnMazeGenerationCompleted -= HandleMazeGenerationCompleted;
+            MazeGenerator.OnPlayerEnteredEndBlock -= HandlePlayerEnteredEndBlock;
             DisablePlayerControls();
         }
-
-        private void HandlePlayercontrolsInputActionPerformed(InputAction.CallbackContext context)
-        {
-            OnInputActionPerformed?.Invoke(this);
-        }
-
+        
         private void Update()
         {
             Vector2 playerControlsValue = playerControlsInputAction.ReadValue<Vector2>();
@@ -90,6 +70,35 @@ namespace Input
         {
             Vector3 newXZVelocity = direction * (playerMoveSpeed * Time.deltaTime);
             rb.velocity = new Vector3(newXZVelocity.x, rb.velocity.y, newXZVelocity.z);
+        }
+
+        private void EnablePlayerControls()
+        {
+            playerControlsInputAction.Enable();
+            playerControlsInputAction.performed += HandlePlayerControlsInputActionPerformed;
+            OnPlayerControlsEnabled?.Invoke(this);
+        }
+
+        private void DisablePlayerControls()
+        {
+            playerControlsInputAction.Disable();
+            playerControlsInputAction.performed -= HandlePlayerControlsInputActionPerformed;
+            OnPlayerControlsDisabled?.Invoke(this);
+        }
+        
+        private void HandleMazeGenerationCompleted(MazeGenerator mazeGenerator)
+        {
+            EnablePlayerControls();
+        }
+        
+        private void HandlePlayerEnteredEndBlock(MazeGenerator mazeGenerator)
+        {
+            DisablePlayerControls();
+        }
+
+        private void HandlePlayerControlsInputActionPerformed(InputAction.CallbackContext context)
+        {
+            OnInputActionPerformed?.Invoke(this);
         }
     }
 }

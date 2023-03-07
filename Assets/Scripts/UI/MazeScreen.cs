@@ -1,3 +1,4 @@
+using Maze;
 using Tools;
 using UnityEngine;
 
@@ -18,13 +19,20 @@ namespace UI
         private void OnEnable()
         {
             RestartButton.OnRestartButtonClicked += HandleRestartButtonClicked;
+            MazeGenerator.OnFocusedOnEndBlock += HandleFocusedOnEndBlock;
         }
         
         private void OnDisable()
         {
             RestartButton.OnRestartButtonClicked -= HandleRestartButtonClicked;
+            MazeGenerator.OnFocusedOnEndBlock -= HandleFocusedOnEndBlock;
             timerUI.ResetTimer();
             controlsTutorial.Hide();
+        }
+
+        private void HandleFocusedOnEndBlock(MazeGenerator mazeGenerator)
+        {
+            PlayExitSplash();
         }
 
         protected override void OnStartFadeIn()
