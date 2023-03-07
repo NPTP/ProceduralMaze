@@ -1,3 +1,4 @@
+using Audio;
 using UnityEngine;
 
 namespace UI
@@ -21,6 +22,7 @@ namespace UI
                 return;
             }
             
+            AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.UITick);
             animator.CrossFade(PlayTutorial, 0);
         }
 

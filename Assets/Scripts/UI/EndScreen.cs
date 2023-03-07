@@ -1,3 +1,4 @@
+using Audio;
 using TMPro;
 using Tools;
 using UnityEngine;
@@ -24,6 +25,8 @@ namespace UI
         {
             base.OnStartFadeIn();
             restartButtonCanvasGroup.alpha = 0;
+            
+            AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.WinDing);
 
             OnScreenFadeInCompleted += handleScreenFadeInCompleted;
 

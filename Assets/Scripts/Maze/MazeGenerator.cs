@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Audio;
 using Cameras;
+using ScriptableObjects;
 using Tools;
 using UI;
 using UnityEngine;
@@ -176,6 +178,8 @@ namespace Maze
             {
                 bool placeLight = i % 2 == 0;
 
+                AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.SwitchOn);
+                
                 for (int j = 0; j < blocks[i].Length; j++)
                 {
                     MazeBlock block = blocks[i][j];
@@ -238,6 +242,8 @@ namespace Maze
             Tween tween = new Tween(() => scaleMultiplier, x => scaleMultiplier = x, Tween.Curve.EaseOutBack);
             tween.Start(1, WALL_SCALE_TIME);
 
+            AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.WallsUp);
+            
             while (scaleMultiplier < 1)
             {
                 setBlockScaleAndYPosition(
@@ -311,6 +317,8 @@ namespace Maze
             Tween tween = new Tween(() => scaleMultiplier, x => scaleMultiplier = x, Tween.Curve.EaseOutBack);
             tween.Start(1, PLANE_SCALE_TIME);
             
+            AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.SpinUp);
+
             while (scaleMultiplier < 1)
             {
                 planeTransform.localScale = goalScale * scaleMultiplier;

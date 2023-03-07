@@ -1,3 +1,4 @@
+using ScriptableObjects;
 using Tools;
 using UnityEngine;
 
@@ -7,6 +8,8 @@ namespace Audio
     {
         [SerializeField] private AudioSource musicAudioSource;
         [SerializeField] private AudioSource oneShotAudioSource;
+        [SerializeField] private AudioContainer audioContainer;
+        public static AudioContainer AudioContainer => Instance.audioContainer;
 
         private void OnValidate()
         {
@@ -37,14 +40,25 @@ namespace Audio
 
         private void Start()
         {
+            musicAudioSource.clip = audioContainer.Music;
             musicAudioSource.Play();
         }
 
         public static void PlayOneShot(AudioClip clip)
         {
-            if (clip != null && Instance.oneShotAudioSource != null)
+            AudioSource oneShotAudioSource = Instance.oneShotAudioSource;
+            if (clip != null && oneShotAudioSource != null)
             {
-                Instance.oneShotAudioSource.PlayOneShot(clip);
+                oneShotAudioSource.PlayOneShot(clip);
+            }
+        }
+        
+        public static void PlayOneShot(AudioMultiClip multiClip)
+        {
+            AudioSource oneShotAudioSource = Instance.oneShotAudioSource;
+            if (multiClip != null && !multiClip.IsEmpty && oneShotAudioSource != null)
+            {
+                oneShotAudioSource.PlayOneShot(multiClip.Clip);
             }
         }
     }

@@ -1,4 +1,5 @@
 using System.Collections;
+using Audio;
 using Tools;
 using UI;
 using UnityEngine;
@@ -86,6 +87,8 @@ namespace Cameras
             Vector3 startPos = mainCameraTransform.position;
             Quaternion startRotation = mainCameraTransform.localRotation;
             float elapsedTime = 0;
+            
+            AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.Whoosh);
             
             while (elapsedTime < duration)
             {

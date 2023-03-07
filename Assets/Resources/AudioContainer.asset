@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3033beee54293ce45ac42ebdf1b74f47, type: 3}
+  m_Name: AudioContainer
+  m_EditorClassIdentifier: 
+  music: {fileID: 8300000, guid: 0a920404d2c2d3e468c20cefe6812694, type: 3}
+  spinUp: {fileID: 8300000, guid: 6b2bb0bb197619941b393afb63407975, type: 3}
+  wallsUp: {fileID: 8300000, guid: bdaa01039cf887d49a12558029c8f9e8, type: 3}
+  switchOn: {fileID: 8300000, guid: 38b55a28911bbd142afd6b6ea26b234c, type: 3}
+  whoosh: {fileID: 8300000, guid: f5e6e73098181e14b8347f7dde81e167, type: 3}
+  winDing: {fileID: 8300000, guid: 20b92d58ce5493d408c7e663ea011d53, type: 3}
+  lowBoom: {fileID: 8300000, guid: 6825428ac556e584784971eb9c8fe085, type: 3}
+  uiTick:
+    audioClips:
+    - {fileID: 8300000, guid: 086c0b85d78545945b722c51ba8e527f, type: 3}
+    - {fileID: 8300000, guid: b4a2a00efdb58bf4989e73fbe02a94c7, type: 3}
+    - {fileID: 8300000, guid: 6033c0b381b02354f8d9d5341a2ddf8b, type: 3}
+    playbackMode: 0
+    index: 0

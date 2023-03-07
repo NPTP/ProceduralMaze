@@ -1,4 +1,5 @@
 using System;
+using Audio;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,6 +35,7 @@ namespace UI
 
         private void HandleRestartButtonClicked()
         {
+            AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.LowBoom);
             OnAnyRestartButtonClicked?.Invoke();
         }
     }

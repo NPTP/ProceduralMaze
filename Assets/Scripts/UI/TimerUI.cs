@@ -1,4 +1,5 @@
 using System.Collections;
+using Audio;
 using Tools;
 using UnityEngine;
 
@@ -30,6 +31,7 @@ namespace UI
 
         public void StartTimer()
         {
+            AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.UITick);
             timeText.SetColor(UIManager.ActiveNumberTextColor);
             animator.CrossFade(ScalePunch, 0);
             CoroutineHost.InterruptAndStartCoroutine(TimerRoutine(), ref timerCoroutine);

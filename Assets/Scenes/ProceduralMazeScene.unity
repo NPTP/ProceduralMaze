@@ -1534,6 +1534,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   musicAudioSource: {fileID: 1276403152}
   oneShotAudioSource: {fileID: 796950040}
+  audioContainer: {fileID: 11400000, guid: 7a51c93fbeda8dc45bbb19452d6ecfce, type: 2}
 --- !u!1 &1304459295
 GameObject:
   m_ObjectHideFlags: 0

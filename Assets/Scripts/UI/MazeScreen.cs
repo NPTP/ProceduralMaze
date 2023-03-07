@@ -1,3 +1,4 @@
+using Audio;
 using Maze;
 using Tools;
 using UnityEngine;
@@ -80,6 +81,7 @@ namespace UI
 
         private void PlayExitSplash()
         {
+            AudioPlayer.PlayOneShot(AudioPlayer.AudioContainer.UITick);
             exitSplashAnimator.CrossFade(Splash, 0);
         }
     }
