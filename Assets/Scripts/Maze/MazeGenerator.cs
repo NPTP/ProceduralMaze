@@ -263,20 +263,20 @@ namespace Maze
         /// <summary>
         /// Start building the real maze in the scene from the abstract data
         /// </summary>
-        /// <param name="maze">The abstract representation of the maze</param>
+        /// <param name="mazeAbstract">The abstract representation of the maze</param>
         /// <param name="topLeftBlockPosition">The top left block position, matching the first entry of
         /// the abstract maze, where maze[i][j] gives row i and column j from the top left down</param>
         /// <returns></returns>
-        private MazeBlock[][] ConstructMazeBlocks(MazeBlockAbstract[][] maze, Vector3 topLeftBlockPosition)
+        private MazeBlock[][] ConstructMazeBlocks(MazeBlockAbstract[][] mazeAbstract, Vector3 topLeftBlockPosition)
         {
-            blocks = new MazeBlock[NumRows][];
+            blocks = new MazeBlock[mazeAbstract.Length][];
 
-            for (int i = 0; i < NumRows; i++)
+            for (int i = 0; i < mazeAbstract.Length; i++)
             {
-                blocks[i] = new MazeBlock[NumCols];
-                for (int j = 0; j < NumCols; j++)
+                blocks[i] = new MazeBlock[mazeAbstract[i].Length];
+                for (int j = 0; j < mazeAbstract[i].Length; j++)
                 {
-                    MazeBlock block = GameObject.Instantiate(mazeBlockPrefab);
+                    MazeBlock block = Instantiate(mazeBlockPrefab);
                     block.name = $"Block ({i})({j})";
                     Transform blockTransform = block.transform;
                     blockTransform.parent = mazeParent;
@@ -285,11 +285,11 @@ namespace Maze
                         topLeftBlockPosition.y,
                         topLeftBlockPosition.z - BLOCK_SIZE * i);
 
-                    block.MatchAbstractBlock(maze[i][j]);
+                    block.MatchAbstractBlock(mazeAbstract[i][j]);
                     blocks[i][j] = block;
                 }
             }
-
+            
             return blocks;
         }
 

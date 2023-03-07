@@ -97,6 +97,27 @@ namespace Maze
                         break;
                 }
             }
+
+            // Clean up any doubled-up walls around this block
+            if (thisBlockAbstract.NorthWall && row - 1 >= 0 && mazeBlocks[row - 1][col].SouthWall)
+            {
+                thisBlockAbstract.NorthWall = false;
+            }
+            
+            if (thisBlockAbstract.EastWall && col + 1 < mazeBlocks[row].Length && mazeBlocks[row][col + 1].WestWall)
+            {
+                thisBlockAbstract.EastWall = false;
+            }
+            
+            if (thisBlockAbstract.SouthWall && row + 1 < mazeBlocks.Length && mazeBlocks[row + 1][col].NorthWall)
+            {
+                thisBlockAbstract.SouthWall = false;
+            }
+            
+            if (thisBlockAbstract.WestWall && col - 1 >= 0 && mazeBlocks[row][col - 1].EastWall)
+            {
+                thisBlockAbstract.WestWall = false;
+            }
         }
     }
 }
