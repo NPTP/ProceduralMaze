@@ -1,4 +1,5 @@
 using System.Collections;
+using Maze;
 using Tools;
 using UI;
 using UnityEngine;
@@ -18,6 +19,7 @@ namespace Cameras
         {
             mainCamera = Camera.main;
             startPositionRotation = (mainCamera.transform.position, mainCamera.transform.rotation);
+
             UIManager.OnMazeRestart += HandleMazeRestart;
         }
 

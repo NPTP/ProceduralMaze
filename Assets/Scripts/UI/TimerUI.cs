@@ -1,5 +1,4 @@
 using System.Collections;
-using TMPro;
 using Tools;
 using UnityEngine;
 
@@ -12,12 +11,11 @@ namespace UI
         private static readonly int ScalePunch = Animator.StringToHash("ScalePunch");
 
         [SerializeField] private RectTransform rectTransform;
-        [SerializeField] private TextMeshProUGUI timeText;
+        [SerializeField] private TimeText timeText;
         [SerializeField] private Animator animator;
 
         private float timeElapsed;
-        private int minutes;
-        private int seconds;
+        public int SecondsElapsed => (int)timeElapsed;
         private Coroutine timerCoroutine;
 
         private void OnValidate()
@@ -28,28 +26,16 @@ namespace UI
             }
         }
 
-        private void Update()
-        {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.X))
-            {
-                StartTimer();
-            }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.C))
-            {
-                StopTimer();
-            }
-        }
-
         public void StartTimer()
         {
-            timeText.color = UIManager.ActiveNumberTextColor;
+            timeText.SetColor(UIManager.ActiveNumberTextColor);
             animator.CrossFade(ScalePunch, 0);
             CoroutineHost.InterruptAndStartCoroutine(TimerRoutine(), ref timerCoroutine);
         }
 
         public void StopTimer()
         {
-            timeText.color = UIManager.InactiveNumberTextColor;
+            timeText.SetColor(UIManager.InactiveNumberTextColor);
             CoroutineHost.StopHostedCoroutine(ref timerCoroutine);
             timerCoroutine = null;
         }
@@ -58,8 +44,6 @@ namespace UI
         {
             StopTimer();
             timeElapsed = 0;
-            minutes = 0;
-            seconds = 0;
             UpdateTimeText();
         }
 
@@ -68,8 +52,8 @@ namespace UI
             while (true)
             {
                 int secondsPassed = (int)timeElapsed;
-                minutes = secondsPassed / 60;
-                seconds = secondsPassed % 60;
+                int minutes = secondsPassed / 60;
+                int seconds = secondsPassed % 60;
                 UpdateTimeText();
                 
                 timeElapsed += Time.deltaTime;
@@ -87,7 +71,7 @@ namespace UI
 
         private void UpdateTimeText()
         {
-            timeText.text = $"{minutes:00}:{seconds:00}";
+            timeText.SetTimeText((int)timeElapsed);
         }
     }
 }

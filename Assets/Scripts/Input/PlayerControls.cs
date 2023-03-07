@@ -1,4 +1,5 @@
 using System;
+using Maze;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -37,6 +38,8 @@ namespace Input
 
         private void OnEnable()
         {
+            MazeGenerator.OnPlayerEnteredEndBlock += HandlePlayerEnteredEndBlock;
+            
             playerControlsInputAction.Enable();
             playerControlsInputAction.performed += HandlePlayercontrolsInputActionPerformed;
             OnPlayerControlsEnabled?.Invoke(this);
@@ -44,9 +47,21 @@ namespace Input
 
         private void OnDisable()
         {
+            MazeGenerator.OnPlayerEnteredEndBlock -= HandlePlayerEnteredEndBlock;
+            
+            DisablePlayerControls();
+        }
+
+        private void DisablePlayerControls()
+        {
             playerControlsInputAction.Disable();
             playerControlsInputAction.performed -= HandlePlayercontrolsInputActionPerformed;
             OnPlayerControlsDisabled?.Invoke(this);
+        }
+        
+        private void HandlePlayerEnteredEndBlock(MazeGenerator mazeGenerator)
+        {
+            DisablePlayerControls();
         }
 
         private void HandlePlayercontrolsInputActionPerformed(InputAction.CallbackContext context)

@@ -22,9 +22,10 @@ namespace Maze
         private const string NUM_ROWS_PLAYERPREFS_KEY = "NumRows";
         private const string NUM_COLS_PLAYERPREFS_KEY = "NumCols";
         private const float CAMERA_MOVE_DURATION = 0.5f;
-        public static event Action OnMazeGenerationStarted;
-        public static event Action OnMazeGenerationCompleted;
-        public static event Action OnPlayerEnteredEndBlock;
+        
+        public static event Action<MazeGenerator> OnMazeGenerationStarted;
+        public static event Action<MazeGenerator> OnMazeGenerationCompleted;
+        public static event Action<MazeGenerator> OnPlayerEnteredEndBlock;
 
         public static int NumRows => PlayerPrefs.GetInt(NUM_ROWS_PLAYERPREFS_KEY, 1);
         public static int NumCols => PlayerPrefs.GetInt(NUM_COLS_PLAYERPREFS_KEY, 1);
@@ -39,10 +40,12 @@ namespace Maze
         [SerializeField] private Material startBlockMaterial;
         [SerializeField] private Material endBlockMaterial;
 
+        private Renderer planeRenderer;
+        public Renderer PlaneRenderer => planeRenderer;
+        
         private Transform mazeParent;
         private readonly List<Light> lights = new List<Light>();
         private MazeBlock[][] blocks;
-        private Renderer planeRenderer;
         private GameObject player;
 
         private void Awake()
@@ -82,7 +85,7 @@ namespace Maze
 
         private void Generate()
         {
-            OnMazeGenerationStarted?.Invoke();
+            OnMazeGenerationStarted?.Invoke(this);
             
             mazeParent = new GameObject("Maze").transform;
 
@@ -274,11 +277,10 @@ namespace Maze
             // TODO: clean up this whole transition block
             yield return new WaitForSeconds(0.5f);
             Vector3 mapViewCameraPosition = MazeCamera.Instance.Position;
-            if (endBlock.BoxCollider != null)
-            {
-                MazeCamera.Instance.FitBoundsInView(endBlock.BoxCollider.bounds, CAMERA_MOVE_DURATION, false);
-            }
+            FocusCameraOnBlock(endBlock);
             yield return new WaitForSeconds(CAMERA_MOVE_DURATION);
+            
+            // TODO: big cleanup
             FindObjectOfType<MazeScreen>().PlayExitSplash();
             yield return new WaitForSeconds(1.5f);
             MazeCamera.Instance.MoveToPosition(mapViewCameraPosition, CAMERA_MOVE_DURATION);
@@ -295,13 +297,22 @@ namespace Maze
 
             yield return new WaitForSeconds(1);
 
-            OnMazeGenerationCompleted?.Invoke();
+            OnMazeGenerationCompleted?.Invoke(this);
         }
 
-        private static void HandlePlayerEnterEndBlock(MazeBlock endBlock)
+        private void HandlePlayerEnterEndBlock(MazeBlock endBlock)
         {
+            FocusCameraOnBlock(endBlock);
             endBlock.OnPlayerEnterBlock -= HandlePlayerEnterEndBlock;
-            OnPlayerEnteredEndBlock?.Invoke();
+            OnPlayerEnteredEndBlock?.Invoke(this);
+        }
+
+        private void FocusCameraOnBlock(MazeBlock block)
+        {
+            if (block.BoxCollider != null)
+            {
+                MazeCamera.Instance.FitBoundsInView(block.BoxCollider.bounds, CAMERA_MOVE_DURATION, false);
+            }
         }
 
         private void TearDown()

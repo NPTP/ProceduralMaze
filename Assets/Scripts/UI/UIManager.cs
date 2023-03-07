@@ -11,6 +11,8 @@ namespace UI
     /// </summary>
     public class UIManager : MonoBehaviour
     {
+        private const string PLAYERPREFS_BEST_TIME_KEY = "BestTime";
+        
         public static event Action OnMazeRestart;
         
         public static readonly Color InactiveNumberTextColor = new Color(1, 1, 1, 1);
@@ -30,11 +32,7 @@ namespace UI
             MazeGenerator.OnMazeGenerationCompleted += HandleMazeGenerationCompleted;
             MazeGenerator.OnPlayerEnteredEndBlock += HandlePlayerEnteredEndBlock;
             PlayerControls.OnPlayerControlsEnabled += HandlePlayerControlsEnabled;
-
-            if (mazeScreen != null)
-            {
-                mazeScreen.OnRestartMaze += HandleRestartMaze;
-            }
+            RestartButton.OnRestartButtonClicked += HandleRestartMaze;
         }
 
         private void OnDestroy()
@@ -43,11 +41,7 @@ namespace UI
             MazeGenerator.OnMazeGenerationCompleted -= HandleMazeGenerationCompleted;
             MazeGenerator.OnPlayerEnteredEndBlock -= HandlePlayerEnteredEndBlock;
             PlayerControls.OnPlayerControlsEnabled -= HandlePlayerControlsEnabled;
-
-            if (mazeScreen != null)
-            {
-                mazeScreen.OnRestartMaze -= HandleRestartMaze;
-            }
+            RestartButton.OnRestartButtonClicked -= HandleRestartMaze;
         }
 
         private void HandlePlayerControlsEnabled(PlayerControls playerControls)
@@ -84,12 +78,12 @@ namespace UI
             fadeOverlay.Fade(Color.black, alpha: 0, duration: 1, fromAlpha: 1);
         }
 
-        private void HandleMazeGenerationStarted()
+        private void HandleMazeGenerationStarted(MazeGenerator mazeGenerator)
         {
             SetScreenActive(mazeScreen, true);
         }
 
-        private void HandleMazeGenerationCompleted()
+        private void HandleMazeGenerationCompleted(MazeGenerator mazeGenerator)
         {
             // Don't show maze screen if player wins maze immediately.
             if (MazeGenerator.NumRows < 2 && MazeGenerator.NumCols < 2)
@@ -101,16 +95,24 @@ namespace UI
             mazeScreen.ShowRestartAndTimerGroup();
         }
         
-        private void HandlePlayerEnteredEndBlock()
+        private void HandlePlayerEnteredEndBlock(MazeGenerator mazeGenerator)
         {
-            RestartMaze();
-            return;
+            mazeScreen.StopMazeTimer();
+
+            int time = mazeScreen.TimerSecondsElapsed;
+            endScreen.SetFinishTimeText(time);
             
-            // TODO
+            int bestTime = PlayerPrefs.GetInt(PLAYERPREFS_BEST_TIME_KEY, int.MaxValue);
+            if (time < bestTime)
+            {
+                endScreen.ShowNewRecord();
+                PlayerPrefs.SetInt(PLAYERPREFS_BEST_TIME_KEY, time);
+            }
+            
             SetScreenActive(endScreen, true);
         }
 
-        private void HandleRestartMaze(MazeScreen ms)
+        private void HandleRestartMaze()
         {
             RestartMaze();
         }

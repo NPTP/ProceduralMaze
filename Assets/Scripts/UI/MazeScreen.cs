@@ -1,7 +1,5 @@
-using System;
 using Tools;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace UI
 {
@@ -10,22 +8,21 @@ namespace UI
         private static readonly int Splash = Animator.StringToHash("Splash");
         private static readonly int Invisible = Animator.StringToHash("Invisible");
         
-        public event Action<MazeScreen> OnRestartMaze;
+        public int TimerSecondsElapsed => timerUI.SecondsElapsed;
 
         [SerializeField] private CanvasGroup restartAndTimerGroup;
-        [SerializeField] private Button restartButton;
         [SerializeField] private TimerUI timerUI;
         [SerializeField] private ControlsTutorial controlsTutorial;
         [SerializeField] private Animator exitSplashAnimator;
         
         private void OnEnable()
         {
-            restartButton.onClick.AddListener(HandleRestartButtonClicked);
+            RestartButton.OnRestartButtonClicked += HandleRestartButtonClicked;
         }
         
         private void OnDisable()
         {
-            restartButton.onClick.RemoveListener(HandleRestartButtonClicked);
+            RestartButton.OnRestartButtonClicked -= HandleRestartButtonClicked;
             timerUI.ResetTimer();
             controlsTutorial.Hide();
         }
@@ -47,7 +44,6 @@ namespace UI
         private void HandleRestartButtonClicked()
         {
             controlsTutorial.Hide();
-            OnRestartMaze?.Invoke(this);
         }
 
         public void ShowRestartAndTimerGroup()
@@ -64,6 +60,11 @@ namespace UI
         public void BeginMazeTimer()
         {
             timerUI.StartTimer();
+        }
+
+        public void StopMazeTimer()
+        {
+            timerUI.StopTimer();
         }
 
         public void PlayExitSplash()
